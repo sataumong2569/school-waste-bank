@@ -10,7 +10,7 @@ import {
     ArrowTrendingUpIcon,
     StarIcon
 } from '@heroicons/react/24/outline'
-
+import ReceiptBill from '../components/ReceiptBill'
 export default function Home() {
 
     const membersList = [
@@ -196,6 +196,61 @@ export default function Home() {
 
             </div>
 
+            {/* ========================================= */}
+            {/* ส่วนรายการรับซื้อขยะ (เรตราคาแบบใบเสร็จ) */}
+            {/* ========================================= */}
+            <div className="mt-12">
+                <h2 className="font-black text-3xl text-[#2d2d2d] mb-8 relative inline-block">
+                    รายการรับซื้อ
+                    <div className="absolute -bottom-2 left-0 w-full h-[4px] bg-[#2d2d2d] rounded-full"></div>
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 md:gap-8 px-4 py-6">
+                    {/* บิลที่ 1 */}
+                    <ReceiptBill
+                        category="PL"
+                        shopName="SchoolWaste"
+                        date="23/07/26"
+                        items={[
+                            { name: "พลาสติกรวม", price: "5.00" },
+                            { name: "ขวดน้ำขุ่น", price: "10.00" },
+                            { name: "ขวดน้ำใส", price: "8.50" },
+                            { name: "ขวดน้ำ PET สี", price: "4.00" },
+                            { name: "LDPE (ถุงพลาสติก, ถุงแกง, ฟิล์ม)", price: "2.00" }
+                        ]}
+                    />
+
+                    {/* พื้นที่สำหรับบิลที่ 2 และ 3 ในอนาคต */}
+                    <ReceiptBill
+                        category="P"
+                        shopName="SchoolWaste"
+                        date="23/07/26"
+                        items={[
+                            { name: "กระดาษขาวดำ", price: "5.00" },
+                            { name: "กระดาษสีรวรม/ขาวดำ", price: "1.00" },
+                            { name: "กระดาษลัง", price: "5.50" },
+
+                        ]}
+                    />
+
+                    <ReceiptBill
+                        category="M/NM/ETC"
+                        shopName="SchoolWaste"
+                        date="23/07/26"
+                        items={[
+                            { name: "กระป๋องกาแฟ/นม/ปลาประป๋อง", price: "5.00" },
+                            { name: "เหล็กหนา", price: "1.00" },
+                            { name: "เหล็กบาง", price: "5.50" },
+                            { name: "สังกะสี", price: "5.50" },
+                            { name: "กระป๋องเบียร์, โค้ก", price: "5.50" },
+                            { name: "กล่องเครื่องดื่ม UHT", price: "5.50" },
+
+                        ]}
+                    />
+
+                </div>
+            </div>
+
             {/* 4. แถวล่างสุด (เต็มจอ) - กราฟแนวนอนแบบละเอียด */}
             <div className="bg-[#fff0f5] border-[3px] border-[#2d2d2d] rounded-2xl shadow-[6px_6px_0px_#2d2d2d] p-8 w-full">
                 <h2 className="font-['Fredoka_One'] text-2xl text-[#2d2d2d] mb-8">รายละเอียดขยะทุกประเภท</h2>
@@ -226,6 +281,7 @@ export default function Home() {
                     ))}
                 </div>
             </div>
+
 
             {/* พื้นที่สำหรับ Footer (เตรียมไว้ก่อน) */}
             {/* <Footer /> */}

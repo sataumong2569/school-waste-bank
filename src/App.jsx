@@ -1,11 +1,10 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+
+import umonglogo from './assets/umong1municipal_icon_notra.png'
 import './App.css'
 
 import { Routes, Route, Link } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import Home from './pages/Home';
 import Members from './pages/Members';
 
@@ -25,6 +24,7 @@ function App() {
           <Route path="/settings" element={<h1 className="text-center font-['Fredoka_One'] text-3xl mt-10">นี่คือหน้า ตั้งค่า</h1>} />
         </Routes>
       </main>
+      <Footer />
     </div>
   );
 }
