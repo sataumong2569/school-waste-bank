@@ -5,6 +5,7 @@ import './App.css'
 import { Routes, Route, Link } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import MobileNav from './components/MobileNav';
 import Home from './pages/Home';
 import Members from './pages/Members';
 
@@ -25,6 +26,7 @@ function App() {
         </Routes>
       </main>
       <Footer />
+      <MobileNav />
     </div>
   );
 }

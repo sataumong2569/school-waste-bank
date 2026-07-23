@@ -75,18 +75,17 @@ export default function Members() {
     }, [searchTerm]);
 
     return (
-        <div className="w-full relative overflow-x-hidden min-h-screen pb-10 flex">
+        <div className="flex-1 flex flex-col md:flex-row pb-24 md:pb-10 w-full overflow-hidden">
 
             {/* ========================================= */}
-            {/* ส่วนซ้าย: รายชื่อสมาชิก */}
+            {/* ส่วนซ้าย (เนื้อหาหลัก): หัวข้อ, ช่องค้นหา, Widget มือถือ, รายชื่อสมาชิก */}
             {/* ========================================= */}
-            <div className={`transition-all duration-300 ease-out px-4 md:pl-8 md:pr-4 pt-8 w-full ${selectedMember ? 'md:w-[60%]' : 'md:w-[75%]'}`}>
+            <div className={`transition-all duration-300 ease-out flex flex-col px-4 md:px-8 pt-6 md:pt-8 h-full ${selectedMember ? 'hidden md:block md:w-full' : 'w-full md:w-[75%]'}`}>
 
-                {/* ส่วนหัวและช่องค้นหา */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                    <h1 className="font-black text-4xl text-[#2d2d2d] tracking-wide relative inline-block pb-2">
+                {/* 1. ส่วนหัวและช่องค้นหา */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-8 gap-4">
+                    <h1 className="font-black text-3xl md:text-4xl text-[#2d2d2d] tracking-wide relative inline-block pb-2">
                         รายชื่อสมาชิกทั้งหมด
-                        {/* ปรับตำแหน่งเส้นใต้ให้สมดุลกับความสูงของตัวอักษรไทย */}
                         <div className="absolute bottom-0 left-0 w-full h-[4px] bg-[#2d2d2d] rounded-full"></div>
                         <div className="absolute -bottom-2 left-4 w-3/4 h-[4px] bg-[#ff6b9d] rounded-full"></div>
                     </h1>
@@ -103,44 +102,152 @@ export default function Members() {
                     </div>
                 </div>
 
-                <div className="bg-white border-[3px] border-[#2d2d2d] rounded-2xl shadow-[6px_6px_0px_#2d2d2d] p-4 md:p-6">
-                    <div className="hidden md:grid grid-cols-[2fr_1fr_1.5fr_1fr] gap-4 px-3 pb-4 border-b-[3px] border-[#2d2d2d] mb-4 font-['Fredoka_One'] text-[#2d2d2d] text-lg">
+                {/* ========================================= */}
+                {/* 📱 2. WIDGET สำหรับมือถือ (ซ่อนในคอมพิวเตอร์) */}
+                {/* ========================================= */}
+                <div className="md:hidden flex flex-row gap-3 overflow-x-auto hide-scrollbar snap-x snap-mandatory mb-4 pb-2">
+
+                    {/* Widget 1: ระยะเวลา (ย่อส่วนตามรูปเป๊ะ) */}
+                    <div className="min-w-[85vw] flex-shrink-0 snap-center bg-[#ffd93d] border-[2px] border-[#2d2d2d] rounded-xl p-3 shadow-[3px_3px_0px_#2d2d2d]">
+                        <div className="text-center mb-2.5">
+                            <h3 className="inline-block text-[10px] font-black bg-white px-2 py-0.5 rounded-full border-[2px] border-[#2d2d2d] text-[#ff6b9d]">
+                                ระยะเวลากิจกรรมการรับฝาก
+                            </h3>
+                        </div>
+                        <div className="mb-2">
+                            <div className="flex justify-between items-end mb-1">
+                                <span className="font-bold text-[10px] text-[#2d2d2d]">รอบวันที่ 15</span>
+                                <span className={`px-1.5 py-0.5 rounded-md border-[1.5px] border-[#2d2d2d] text-[8px] font-black tracking-wide ${progress15 === 100 ? 'bg-[#95e1d3]' : 'bg-white'} text-[#2d2d2d]`}>
+                                    {status15}
+                                </span>
+                            </div>
+                            <div className="w-full h-2 bg-white border-[1.5px] border-[#2d2d2d] rounded-full overflow-hidden">
+                                <div className="h-full bg-[#ff6b9d] transition-all duration-500" style={{ width: `${progress15}%` }}></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div className="flex justify-between items-end mb-1">
+                                <span className="font-bold text-[10px] text-[#2d2d2d]">รอบวันที่ 25</span>
+                                <span className={`px-1.5 py-0.5 rounded-md border-[1.5px] border-[#2d2d2d] text-[8px] font-black tracking-wide ${progress25 === 100 ? 'bg-[#95e1d3]' : 'bg-white'} text-[#2d2d2d]`}>
+                                    {status25}
+                                </span>
+                            </div>
+                            <div className="w-full h-2 bg-white border-[1.5px] border-[#2d2d2d] rounded-full overflow-hidden">
+                                <div className="h-full bg-[#4ecdc4] transition-all duration-500" style={{ width: `${progress25}%` }}></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Widget 2: Top 3 (ย่อส่วน) */}
+                    <div className="min-w-[85vw] flex-shrink-0 snap-center bg-white border-[2px] border-[#2d2d2d] rounded-xl p-3 shadow-[3px_3px_0px_#2d2d2d]">
+                        <div className="text-center mb-2.5">
+                            <h3 className="inline-block text-[10px] font-black bg-[#f0fffe] px-2 py-0.5 rounded-full border-[2px] border-[#2d2d2d] text-[#0d9488]">
+                                🏆 Top 3 นำฝากยอดเยี่ยม
+                            </h3>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            {top3Members.map((member) => (
+                                <div key={member.id} className="flex items-center gap-2">
+                                    <div className={`w-8 h-8 rounded-full border-[2px] border-[#2d2d2d] flex items-center justify-center text-sm shadow-[2px_2px_0px_#2d2d2d] flex-shrink-0 ${member.color}`}>
+                                        {member.medal}
+                                    </div>
+                                    <div className="flex-1 overflow-hidden">
+                                        <p className="font-black text-[11px] text-[#2d2d2d] truncate">{member.name}</p>
+                                        <p className="text-[9px] font-bold text-[#0d9488] mt-0.5">ฝาก {member.consistency} ครั้ง | ลด {member.carbon} kg</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Widget 3: แลกรางวัล (ย่อส่วนแล้ว) */}
+                    <div className="min-w-[85vw] flex-shrink-0 snap-center bg-[#f3e8ff] border-[2px] border-[#2d2d2d] rounded-xl p-3 shadow-[3px_3px_0px_#2d2d2d]">
+                        <div className="text-center mb-2.5">
+                            <h3 className="inline-block text-[10px] font-black bg-white px-2 py-0.5 rounded-full border-[2px] border-[#2d2d2d] text-[#a855f7]">
+                                🎁 แลกรางวัล
+                            </h3>
+                        </div>
+                        {/* ปรับ gap ระหว่างกล่องเป็น 1.5 */}
+                        <div className="flex flex-col gap-1.5">
+                            {/* กล่องที่ 1: ลด padding เป็น px-2 py-1.5 */}
+                            <div className="flex items-center justify-between px-2 py-1.5 bg-white border-[2px] border-[#2d2d2d] rounded-lg">
+                                <div className="flex items-center gap-2">
+                                    {/* ลดขนาดไอคอนเป็น w-6 h-6 และตัวหนังสือ text-xs */}
+                                    <div className="w-6 h-6 bg-[#ffd93d] rounded-md border-[2px] border-[#2d2d2d] flex items-center justify-center text-xs">📓</div>
+                                    <div>
+                                        {/* ลด mb ลงเหลือ 0.5 */}
+                                        <p className="font-bold text-[11px] text-[#2d2d2d] leading-none mb-0.5">สมุดรีไซเคิล</p>
+                                        <p className="text-[8px] font-black text-[#ff6b9d]">เหลือ 15 ชิ้น</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <span className="block font-black text-sm text-[#0d9488] leading-none">20</span>
+                                    <span className="text-[8px] font-bold text-[#555]">kgCO₂</span>
+                                </div>
+                            </div>
+
+                            {/* กล่องที่ 2: ลด padding เป็น px-2 py-1.5 */}
+                            <div className="flex items-center justify-between px-2 py-1.5 bg-white border-[2px] border-[#2d2d2d] rounded-lg">
+                                <div className="flex items-center gap-2">
+                                    {/* ลดขนาดไอคอนเป็น w-6 h-6 และตัวหนังสือ text-xs */}
+                                    <div className="w-6 h-6 bg-[#4ecdc4] rounded-md border-[2px] border-[#2d2d2d] flex items-center justify-center text-xs">🥤</div>
+                                    <div>
+                                        {/* ลด mb ลงเหลือ 0.5 */}
+                                        <p className="font-bold text-[11px] text-[#2d2d2d] leading-none mb-0.5">แก้วน้ำพกพา</p>
+                                        <p className="text-[8px] font-black text-[#ff6b9d]">เหลือ 3 ชิ้น</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <span className="block font-black text-sm text-[#0d9488] leading-none">50</span>
+                                    <span className="text-[8px] font-bold text-[#555]">kgCO₂</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 3. รายชื่อสมาชิกแบบ List Row */}
+                <div className="bg-white border-[3px] border-[#2d2d2d] rounded-2xl shadow-[6px_6px_0px_#2d2d2d] p-3 md:p-6 flex flex-col h-full overflow-hidden">
+
+                    <div className="hidden md:grid grid-cols-[2fr_1fr_1.5fr_1fr] gap-4 px-3 pb-3 border-b-[3px] border-[#2d2d2d] mb-3 font-['Fredoka_One'] text-[#2d2d2d] text-lg">
                         <div className="text-left">ชื่อ - นามสกุล</div>
                         <div className="text-center">ยอดเงิน (บาท)</div>
                         <div className="text-center">ลดคาร์บอน (kgCO2e)</div>
                         <div className="text-center">สถานะ</div>
                     </div>
 
-                    <div className="flex flex-col gap-4 min-h-[300px]">
+                    <div className="flex flex-col gap-3 overflow-y-auto hide-scrollbar flex-1 min-h-[300px]">
                         {displayedMembers.length > 0 ? (
                             displayedMembers.map((member) => (
                                 <div
                                     key={member.id}
                                     onClick={() => setSelectedMember(member)}
-                                    className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1.5fr_1fr] gap-3 md:gap-4 items-center p-3 md:p-2.5 border-[2px] border-[#2d2d2d] rounded-xl cursor-pointer hover:bg-[#f0fffe] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_#2d2d2d] transition-all"
+                                    className="flex items-center justify-between md:grid md:grid-cols-[2fr_1fr_1.5fr_1fr] md:gap-4 p-2 md:p-2.5 border-[2px] border-[#2d2d2d] rounded-xl cursor-pointer hover:bg-[#f0fffe] hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_#2d2d2d] transition-all bg-white"
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-12 h-12 rounded-full border-[2px] border-[#2d2d2d] ${member.color || 'bg-[#ffd93d]'} flex-shrink-0 overflow-hidden`}>
-
+                                    <div className="flex items-center gap-3 w-[60%] md:w-full">
+                                        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full border-[2px] border-[#2d2d2d] ${member.color || 'bg-[#ffd93d]'} flex-shrink-0 overflow-hidden`}>
                                             <img src={member.image} alt={member.name} loading="lazy" className="w-full h-full object-cover" />
                                         </div>
-                                        <div>
-                                            <p className="font-bold text-[#2d2d2d] font-['Nunito'] text-base line-clamp-1">{member.name}</p>
-                                            <p className="text-xs text-[#555] font-semibold">ชั้น {member.grade}</p>
+                                        <div className="overflow-hidden">
+                                            <p className="font-bold text-[#2d2d2d] font-['Nunito'] text-sm md:text-base truncate">{member.name}</p>
+                                            <p className="text-[10px] md:text-xs text-[#555] font-semibold">ชั้น {member.grade}</p>
                                         </div>
                                     </div>
-                                    <div className="flex justify-between md:justify-center items-center">
-                                        <span className="md:hidden text-xs font-bold text-[#555]">ยอดเงิน:</span>
-                                        <p className="font-['Fredoka_One'] text-[#ff6b9d] text-base md:text-lg">{member.balance || 0}</p>
-                                    </div>
-                                    <div className="flex justify-between md:justify-center items-center">
-                                        <span className="md:hidden text-xs font-bold text-[#555]">ลดคาร์บอน:</span>
 
-                                        <p className="font-['Fredoka_One'] text-[#0d9488] text-base md:text-lg">{member.carbonPoints}</p>
+                                    <div className="hidden md:flex justify-center items-center">
+                                        <p className="font-['Fredoka_One'] text-[#ff6b9d] text-base">{member.balance || 0}</p>
                                     </div>
-                                    <div className="flex justify-between md:justify-center items-center">
-                                        <span className="md:hidden text-xs font-bold text-[#555]">สถานะ:</span>
-                                        <span className="px-3 py-1 rounded-full text-xs font-bold border-2 border-[#2d2d2d] bg-[#95e1d3] text-[#2d2d2d]">กำลังศึกษา</span>
+                                    <div className="hidden md:flex justify-center items-center">
+                                        <p className="font-['Fredoka_One'] text-[#0d9488] text-base">{member.carbonPoints}</p>
+                                    </div>
+
+                                    <div className="flex flex-col md:hidden items-end text-[10px] font-bold text-[#555] gap-0.5 w-[40%]">
+                                        <span className="text-[#ff6b9d]">💰 {member.balance || 0} บาท</span>
+                                        <span className="text-[#0d9488]">🌱 {member.carbonPoints} kgCO₂</span>
+                                    </div>
+
+                                    <div className="hidden md:flex justify-center items-center">
+                                        <span className="px-3 py-1 rounded-full text-[10px] font-bold border-2 border-[#2d2d2d] bg-[#95e1d3] text-[#2d2d2d]">กำลังศึกษา</span>
                                     </div>
                                 </div>
                             ))
@@ -152,44 +259,40 @@ export default function Members() {
                         )}
                     </div>
 
-                    {/* ระบบปุ่มกดแบ่งหน้า (Pagination) */}
                     {totalPages > 1 && (
-                        <div className="mt-8 flex justify-between items-center border-t-[3px] border-[#2d2d2d] pt-4">
+                        <div className="mt-4 md:mt-8 flex justify-between items-center border-t-[3px] border-[#2d2d2d] pt-4">
                             <button
                                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                                 disabled={currentPage === 1}
-                                className="px-4 py-2 bg-white border-[3px] border-[#2d2d2d] rounded-xl font-bold font-['Nunito'] shadow-[4px_4px_0px_#2d2d2d] disabled:opacity-50 disabled:shadow-none hover:-translate-y-0.5 transition-all flex items-center gap-2"
+                                className="px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm bg-white border-[2.5px] md:border-[3px] border-[#2d2d2d] rounded-xl font-bold font-['Nunito'] shadow-[2px_2px_0px_#2d2d2d] md:shadow-[4px_4px_0px_#2d2d2d] disabled:opacity-50 disabled:shadow-none hover:-translate-y-0.5 transition-all flex items-center gap-1 md:gap-2"
                             >
-                                <ChevronLeftIcon className="w-4 h-4 font-bold" /> ก่อนหน้า
+                                <ChevronLeftIcon className="w-3 h-3 md:w-4 md:h-4 font-bold" /> ก่อนหน้า
                             </button>
-
-                            <span className="font-bold font-['Nunito'] text-[#555]">
-                                หน้า {currentPage} จาก {totalPages}
-                            </span>
-
+                            <span className="font-bold font-['Nunito'] text-xs md:text-sm text-[#555]">หน้า {currentPage} / {totalPages}</span>
                             <button
                                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                                 disabled={currentPage === totalPages}
-                                className="px-4 py-2 bg-white border-[3px] border-[#2d2d2d] rounded-xl font-bold font-['Nunito'] shadow-[4px_4px_0px_#2d2d2d] disabled:opacity-50 disabled:shadow-none hover:-translate-y-0.5 transition-all flex items-center gap-2"
+                                className="px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm bg-white border-[2.5px] md:border-[3px] border-[#2d2d2d] rounded-xl font-bold font-['Nunito'] shadow-[2px_2px_0px_#2d2d2d] md:shadow-[4px_4px_0px_#2d2d2d] disabled:opacity-50 disabled:shadow-none hover:-translate-y-0.5 transition-all flex items-center gap-1 md:gap-2"
                             >
-                                ถัดไป <ChevronRightIcon className="w-4 h-4 font-bold" />
+                                ถัดไป <ChevronRightIcon className="w-3 h-3 md:w-4 md:h-4 font-bold" />
                             </button>
                         </div>
                     )}
                 </div>
             </div>
 
+            {/* ========================================= */}
+            {/* 💻 ส่วนขวา: WIDGET สำหรับคอมพิวเตอร์ (ซ่อนในมือถือ) */}
+            {/* ========================================= */}
+            <div className={`hidden md:flex flex-col gap-6 pt-8 pr-8 w-[25%] transition-all duration-300 ease-out overflow-hidden ${selectedMember ? 'md:w-0 md:opacity-0' : 'opacity-100'}`}>
 
-            <div className={`hidden md:flex flex-col gap-6 pt-8 pr-8 transition-all duration-300 ease-out overflow-hidden ${selectedMember ? 'w-0 opacity-0' : 'w-[25%] opacity-100'}`}>
-
+                {/* Widget 1 (คอม) */}
                 <div className="bg-[#ffd93d] border-[3px] border-[#2d2d2d] rounded-2xl p-5 shadow-[6px_6px_0px_#2d2d2d]">
                     <div className="text-center mb-5">
                         <h3 className="inline-block text-sm font-black bg-white px-3 py-1.5 rounded-full border-[2px] border-[#2d2d2d] shadow-[2px_2px_0px_#2d2d2d] text-[#ff6b9d] tracking-wide">
                             ระยะเวลากิจกรรมการรับฝาก
                         </h3>
                     </div>
-
-                    {/* รอบที่ 1: วันที่ 15 */}
                     <div className="mb-5">
                         <div className="flex justify-between items-end mb-2">
                             <span className="font-bold text-[#2d2d2d]">รอบวันที่ 15</span>
@@ -198,14 +301,9 @@ export default function Members() {
                             </span>
                         </div>
                         <div className="w-full h-4 bg-white border-[3px] border-[#2d2d2d] rounded-full overflow-hidden shadow-[2px_2px_0px_#2d2d2d]">
-                            <div
-                                className="h-full bg-[#ff6b9d] transition-all duration-500 ease-out"
-                                style={{ width: `${progress15}%` }}
-                            ></div>
+                            <div className="h-full bg-[#ff6b9d] transition-all duration-500 ease-out" style={{ width: `${progress15}%` }}></div>
                         </div>
                     </div>
-
-                    {/* รอบที่ 2: วันที่ 25 */}
                     <div>
                         <div className="flex justify-between items-end mb-2">
                             <span className="font-bold text-[#2d2d2d]">รอบวันที่ 25</span>
@@ -214,14 +312,12 @@ export default function Members() {
                             </span>
                         </div>
                         <div className="w-full h-4 bg-white border-[3px] border-[#2d2d2d] rounded-full overflow-hidden shadow-[2px_2px_0px_#2d2d2d]">
-                            <div
-                                className="h-full bg-[#4ecdc4] transition-all duration-500 ease-out"
-                                style={{ width: `${progress25}%` }}
-                            ></div>
+                            <div className="h-full bg-[#4ecdc4] transition-all duration-500 ease-out" style={{ width: `${progress25}%` }}></div>
                         </div>
                     </div>
                 </div>
-                {/* Widget 2: Top 3 สม่ำเสมอ */}
+
+                {/* Widget 2 (คอม) */}
                 <div className="bg-white border-[3px] border-[#2d2d2d] rounded-2xl p-5 shadow-[6px_6px_0px_#2d2d2d]">
                     <div className="text-center mb-5">
                         <h3 className="inline-block text-sm font-black bg-[#f0fffe] px-3 py-1.5 rounded-full border-[2px] border-[#2d2d2d] shadow-[2px_2px_0px_#2d2d2d] text-[#0d9488]">
@@ -231,36 +327,29 @@ export default function Members() {
                     <div className="flex flex-col gap-4">
                         {top3Members.map((member) => (
                             <div key={member.id} className="flex items-center gap-3">
-                                {/* เหรียญรางวัล */}
                                 <div className={`w-12 h-12 rounded-full border-[3px] border-[#2d2d2d] flex items-center justify-center text-2xl shadow-[3px_3px_0px_#2d2d2d] flex-shrink-0 ${member.color}`}>
                                     {member.medal}
                                 </div>
-                                {/* ข้อมูล */}
                                 <div className="flex-1 overflow-hidden">
                                     <p className="font-black text-sm text-[#2d2d2d] truncate">{member.name}</p>
-                                    <p className="text-[11px] font-bold text-[#0d9488] mt-0.5">
-                                        ฝาก {member.consistency} ครั้ง | ลด {member.carbon} kgCO₂e
-                                    </p>
+                                    <p className="text-[11px] font-bold text-[#0d9488] mt-0.5">ฝาก {member.consistency} ครั้ง | ลด {member.carbon} kgCO₂e</p>
                                 </div>
                             </div>
                         ))}
                     </div>
                 </div>
-                {/* Widget 3: แลกรางวัลรักษ์โลก (Carbon Rewards) */}
+
+                {/* Widget 3 (คอม) */}
                 <div className="bg-[#f3e8ff] border-[3px] border-[#2d2d2d] rounded-2xl p-5 shadow-[6px_6px_0px_#2d2d2d]">
                     <div className="text-center mb-5">
                         <h3 className="inline-block text-sm font-black bg-white px-3 py-1.5 rounded-full border-[2px] border-[#2d2d2d] shadow-[2px_2px_0px_#2d2d2d] text-[#a855f7]">
                             🎁 แลกรางวัล
                         </h3>
                     </div>
-
                     <div className="flex flex-col gap-3">
-                        {/* Item 1 */}
-                        <div className="flex items-center justify-between p-3 bg-white border-[2px] border-[#2d2d2d] rounded-xl hover:-translate-y-1 hover:shadow-[4px_4px_0px_#2d2d2d] transition-all cursor-pointer">
+                        <div className="flex items-center justify-between p-3 bg-white border-[2px] border-[#2d2d2d] rounded-xl cursor-pointer">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-[#ffd93d] rounded-lg border-[2px] border-[#2d2d2d] flex items-center justify-center text-xl shadow-[2px_2px_0px_#2d2d2d]">
-                                    📓
-                                </div>
+                                <div className="w-10 h-10 bg-[#ffd93d] rounded-lg border-[2px] border-[#2d2d2d] flex items-center justify-center text-xl shadow-[2px_2px_0px_#2d2d2d]">📓</div>
                                 <div>
                                     <p className="font-bold text-sm text-[#2d2d2d] leading-none mb-1">สมุดรีไซเคิล</p>
                                     <p className="text-[10px] font-black text-[#ff6b9d]">เหลือ 15 ชิ้น</p>
@@ -271,13 +360,9 @@ export default function Members() {
                                 <span className="text-[10px] font-bold text-[#555]">kgCO₂e</span>
                             </div>
                         </div>
-
-                        {/* Item 2 */}
-                        <div className="flex items-center justify-between p-3 bg-white border-[2px] border-[#2d2d2d] rounded-xl hover:-translate-y-1 hover:shadow-[4px_4px_0px_#2d2d2d] transition-all cursor-pointer">
+                        <div className="flex items-center justify-between p-3 bg-white border-[2px] border-[#2d2d2d] rounded-xl cursor-pointer">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-[#4ecdc4] rounded-lg border-[2px] border-[#2d2d2d] flex items-center justify-center text-xl shadow-[2px_2px_0px_#2d2d2d]">
-                                    🥤
-                                </div>
+                                <div className="w-10 h-10 bg-[#4ecdc4] rounded-lg border-[2px] border-[#2d2d2d] flex items-center justify-center text-xl shadow-[2px_2px_0px_#2d2d2d]">🥤</div>
                                 <div>
                                     <p className="font-bold text-sm text-[#2d2d2d] leading-none mb-1">แก้วน้ำพกพา</p>
                                     <p className="text-[10px] font-black text-[#ff6b9d]">เหลือ 3 ชิ้น</p>
@@ -289,15 +374,11 @@ export default function Members() {
                             </div>
                         </div>
                     </div>
-
-                    <button className="w-full mt-5 py-2.5 bg-[#95e1d3] border-[3px] border-[#2d2d2d] rounded-xl font-black text-[#2d2d2d] text-sm shadow-[4px_4px_0px_#2d2d2d] hover:-translate-y-1 hover:shadow-[6px_6px_0px_#2d2d2d] active:translate-y-0 active:shadow-[2px_2px_0px_#2d2d2d] transition-all">
-                        ดูของรางวัลทั้งหมด ✨
-                    </button>
                 </div>
             </div>
 
             {/* ========================================= */}
-            {/* ส่วนขวาที่ 2 (Drawer): หน้าต่างสไลด์ */}
+            {/* หน้าต่างสไลด์ (Drawer) เมื่อกดดูข้อมูลรายบุคคล */}
             {/* ========================================= */}
             {selectedMember && (
                 <div className="fixed inset-0 bg-[#2d2d2d]/40 backdrop-blur-sm z-40 md:hidden transition-opacity" onClick={() => setSelectedMember(null)}></div>
@@ -318,32 +399,28 @@ export default function Members() {
                         <p className="font-['Nunito'] font-bold text-[#666] mb-6 text-base md:text-lg">ชั้น {selectedMember.grade}</p>
 
                         <div className="w-full grid grid-cols-2 gap-4 mb-8">
-                            <div className="bg-white border-[3px] border-[#2d2d2d] rounded-2xl p-4 flex flex-col items-center justify-center shadow-[4px_4px_0px_#2d2d2d] hover:-translate-y-1 transition-transform">
+                            <div className="bg-white border-[3px] border-[#2d2d2d] rounded-2xl p-4 flex flex-col items-center justify-center shadow-[4px_4px_0px_#2d2d2d]">
                                 <span className="font-['Nunito'] font-bold text-[#555] mb-1 text-xs md:text-sm">ยอดเงินคงเหลือ</span>
                                 <span className="font-['Fredoka_One'] text-2xl md:text-4xl text-[#ff6b9d]">{selectedMember.balance}</span>
                                 <span className="font-['Nunito'] font-bold text-sm text-[#2d2d2d] mt-1">บาท</span>
                             </div>
 
-                            <div className="bg-white border-[3px] border-[#2d2d2d] rounded-2xl p-4 flex flex-col items-center justify-center shadow-[4px_4px_0px_#2d2d2d] hover:-translate-y-1 transition-transform">
+                            <div className="bg-white border-[3px] border-[#2d2d2d] rounded-2xl p-4 flex flex-col items-center justify-center shadow-[4px_4px_0px_#2d2d2d]">
                                 <span className="font-['Nunito'] font-bold text-[#555] mb-1 text-xs md:text-sm">ลดคาร์บอน</span>
-                                {/* แก้ตัวแปรเป็น carbonPoints */}
                                 <span className="font-['Fredoka_One'] text-2xl md:text-4xl text-[#0d9488]">{selectedMember.carbonPoints}</span>
                                 <span className="font-['Nunito'] font-bold text-sm text-[#2d2d2d] mt-1">kgCO₂e</span>
                             </div>
                         </div>
 
-                        {/* เปลี่ยนปุ่มเป็นแบบที่ยังไม่ได้ Login */}
-                        <button className="w-full bg-[#ffd93d] border-[3px] border-[#2d2d2d] rounded-xl py-3 font-['Fredoka_One'] text-[#2d2d2d] text-lg shadow-[4px_4px_0px_#2d2d2d] hover:-translate-y-1 hover:shadow-[6px_6px_0px_#2d2d2d] active:translate-y-0 active:shadow-[2px_2px_0px_#2d2d2d] transition-all mb-4">
-                            📷 บันทึก E-Card ประจำตัว
+                        <button className="w-full bg-[#ffd93d] border-[3px] border-[#2d2d2d] rounded-xl py-3 font-['Fredoka_One'] text-[#2d2d2d] text-lg shadow-[4px_4px_0px_#2d2d2d] hover:-translate-y-1 hover:shadow-[6px_6px_0px_#2d2d2d] active:translate-y-0 transition-all mb-4">
+                            ประวัติการฝาก
                         </button>
-                        <button className="w-full bg-white border-[3px] border-[#2d2d2d] rounded-xl py-3 font-['Fredoka_One'] text-[#2d2d2d] text-lg shadow-[4px_4px_0px_#2d2d2d] hover:-translate-y-1 hover:shadow-[6px_6px_0px_#2d2d2d] active:translate-y-0 active:shadow-[2px_2px_0px_#2d2d2d] transition-all">
+                        <button className="w-full bg-white border-[3px] border-[#2d2d2d] rounded-xl py-3 font-['Fredoka_One'] text-[#2d2d2d] text-lg shadow-[4px_4px_0px_#2d2d2d] hover:-translate-y-1 hover:shadow-[6px_6px_0px_#2d2d2d] active:translate-y-0 transition-all">
                             📌 แชร์ความสำเร็จ
                         </button>
-
                     </div>
                 )}
             </div>
-
         </div>
     )
 }
