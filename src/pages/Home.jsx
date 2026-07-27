@@ -283,9 +283,6 @@ export default function Home() {
             </div>
 
 
-            {/* พื้นที่สำหรับ Footer (เตรียมไว้ก่อน) */}
-            {/* <Footer /> */}
-
         </div>
     )
 }
