@@ -1,25 +1,86 @@
+/* กำหนดตัวแปรสีกลางสไตล์ Clay (Pastel & Vibrant) */
+:root {
+  --clay-brand: #7c3aed;
+  --clay-brand-dk: #5b21b6;
+  --clay-text: #1e1b4b;
+  --clay-muted: #6d6a8a;
+  --clay-bg: #f0eeff;
+  --clay-card-bg: #ffffff;
+  --clay-shadow-light: rgba(124, 58, 237, 0.15);
+}
+
+/* เพิ่ม Animation เด้งขึ้นอย่างนุ่มนวล */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes floatSmooth {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+/* เปลี่ยน counter ให้เป็นปุ่ม 3D ทรงแคปซูล (Clay Button) */
 .counter {
   font-size: 16px;
-  padding: 5px 10px;
-  border-radius: 5px;
-  color: var(--accent);
-  background: var(--accent-bg);
-  border: 2px solid transparent;
-  transition: border-color 0.3s;
+  font-weight: 800;
+  font-family: 'Nunito', sans-serif;
+  padding: 14px 28px;
+  border-radius: 100px;
+  /* ทรงแคปซูล */
+  color: #fff;
+  background: var(--clay-brand);
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
   margin-bottom: 24px;
+  /* เงา 3D ดินปั้น: มีขอบล่าง (Solid) + เงาด้านใน (Inset) + เงาฟุ้ง (Drop) */
+  box-shadow:
+    0 6px 0px var(--clay-brand-dk),
+    inset 0 -6px 0 rgba(0, 0, 0, 0.15),
+    0 12px 32px rgba(124, 58, 237, 0.35);
 
   &:hover {
-    border-color: var(--accent-border);
+    transform: translateY(-2px);
+    box-shadow:
+      0 8px 0px var(--clay-brand-dk),
+      inset 0 -6px 0 rgba(0, 0, 0, 0.15),
+      0 16px 40px rgba(124, 58, 237, 0.45);
+  }
+
+  &:active {
+    transform: translateY(4px);
+    /* ยุบตัวลงเมื่อกด */
+    box-shadow:
+      0 2px 0px var(--clay-brand-dk),
+      inset 0 -2px 0 rgba(0, 0, 0, 0.15),
+      0 6px 16px rgba(124, 58, 237, 0.25);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
+    outline: 2px solid var(--clay-brand);
+    outline-offset: 4px;
   }
 }
 
 .hero {
   position: relative;
+  /* เพิ่มเอฟเฟกต์ลอยเบาๆ ให้ดูมีชีวิตชีวา */
+  animation: floatSmooth 6s ease-in-out infinite;
 
   .base,
   .framework,
@@ -62,6 +123,8 @@
   place-content: center;
   place-items: center;
   flex-grow: 1;
+  /* อนิเมชั่นเฟดขึ้นตอนโหลดหน้า */
+  animation: fadeUp 0.6s ease forwards;
 
   @media (max-width: 1024px) {
     padding: 32px 20px 24px;
@@ -69,14 +132,36 @@
   }
 }
 
+/* เปลี่ยนโครงสร้างส่วนเนื้อหาให้เป็นการ์ดดินปั้น (Clay Cards) */
 #next-steps {
   display: flex;
-  border-top: 1px solid var(--border);
+  gap: 24px;
   text-align: left;
+  border-top: none;
+  /* เอาเส้นขอบแข็งๆ เดิมออก */
+  padding-top: 20px;
 
   &>div {
     flex: 1 1 0;
-    padding: 32px;
+    padding: 32px 24px;
+    background: var(--clay-card-bg);
+    border-radius: 28px;
+    /* ขอบโค้งมนพิเศษ */
+    color: var(--clay-text);
+    /* เงาการ์ด 3D สไตล์ Clay */
+    box-shadow:
+      8px 8px 0px var(--clay-shadow-light),
+      inset 0 -4px 0 rgba(0, 0, 0, 0.08),
+      0 20px 40px rgba(124, 58, 237, 0.10);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow:
+        10px 12px 0px rgba(124, 58, 237, 0.18),
+        inset 0 -4px 0 rgba(0, 0, 0, 0.08),
+        0 28px 48px rgba(124, 58, 237, 0.14);
+    }
 
     @media (max-width: 1024px) {
       padding: 24px 20px;
@@ -85,8 +170,10 @@
 
   .icon {
     margin-bottom: 16px;
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
+    color: var(--clay-brand);
+    /* ปรับสีไอคอนให้เข้าธีม */
   }
 
   @media (max-width: 1024px) {
@@ -96,39 +183,53 @@
 }
 
 #docs {
-  border-right: 1px solid var(--border);
-
-  @media (max-width: 1024px) {
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
+  /* ยกเลิกเส้นกั้นกลาง เพราะเปลี่ยนมาใช้เป็น Card แยกกล่องกันแล้ว */
+  border: none;
 }
 
 #next-steps ul {
   list-style: none;
   padding: 0;
   display: flex;
-  gap: 8px;
+  gap: 12px;
   margin: 32px 0 0;
 
   .logo {
     height: 18px;
   }
 
+  /* ปรับปุ่มลิงก์ให้เป็นปุ่ม Clay สีขาว */
   a {
-    color: var(--text-h);
-    font-size: 16px;
-    border-radius: 6px;
-    background: var(--social-bg);
+    color: var(--clay-text);
+    font-size: 14px;
+    font-weight: 800;
+    border-radius: 100px;
+    background: #fff;
     display: flex;
-    padding: 6px 12px;
+    padding: 10px 20px;
     align-items: center;
     gap: 8px;
     text-decoration: none;
-    transition: box-shadow 0.3s;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    box-shadow:
+      0 4px 0px rgba(0, 0, 0, 0.10),
+      inset 0 -4px 0 rgba(0, 0, 0, 0.06),
+      0 8px 24px rgba(0, 0, 0, 0.08);
 
     &:hover {
-      box-shadow: var(--shadow);
+      transform: translateY(-2px);
+      box-shadow:
+        0 6px 0px rgba(0, 0, 0, 0.15),
+        inset 0 -4px 0 rgba(0, 0, 0, 0.06),
+        0 12px 32px rgba(0, 0, 0, 0.12);
+    }
+
+    &:active {
+      transform: translateY(2px);
+      box-shadow:
+        0 2px 0px rgba(0, 0, 0, 0.10),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.06),
+        0 4px 12px rgba(0, 0, 0, 0.08);
     }
 
     .button-icon {
@@ -143,7 +244,7 @@
     justify-content: center;
 
     li {
-      flex: 1 1 calc(50% - 8px);
+      flex: 1 1 calc(50% - 12px);
     }
 
     a {
@@ -156,7 +257,8 @@
 
 #spacer {
   height: 88px;
-  border-top: 1px solid var(--border);
+  border-top: none;
+  /* เอาเส้นขอบแข็งๆ ออกเพื่อให้กลืนไปกับพื้นหลัง */
 
   @media (max-width: 1024px) {
     height: 48px;
@@ -166,6 +268,8 @@
 .ticks {
   position: relative;
   width: 100%;
+  opacity: 0.3;
+  /* ลดความเข้มลงเพื่อให้ไม่แย่งสายตากับกล่องการ์ด 3D */
 
   &::before,
   &::after {
@@ -177,12 +281,12 @@
 
   &::before {
     left: 0;
-    border-left-color: var(--border);
+    border-left-color: var(--clay-muted);
   }
 
   &::after {
     right: 0;
-    border-right-color: var(--border);
+    border-right-color: var(--clay-muted);
   }
 }
 
@@ -194,4 +298,206 @@
 .hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* CLAY DESIGN SYSTEM & ANIMATIONS (Home.jsx) */
+:root {
+  --brand: #7c3aed;
+  --brand-dk: #5b21b6;
+  --amber: #f59e0b;
+  --amber-dk: #d97706;
+  --text: #1e1b4b;
+  --muted: #6d6a8a;
+  --bg-section1: #f0eeff;
+  /* ม่วงอ่อน */
+  --bg-section2: #ecfdf5;
+  /* มิ้นต์อ่อน */
+  --bg-section3: #fff7ed;
+  /* พีชอ่อน */
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-up {
+  animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+
+/* 3D Floating Animation */
+@keyframes float3D {
+
+  0%,
+  100% {
+    transform: translateY(0) rotateX(15deg) rotateY(-15deg);
+  }
+
+  50% {
+    transform: translateY(-15px) rotateX(20deg) rotateY(-10deg);
+  }
+}
+
+.animate-float-3d {
+  animation: float3D 6s ease-in-out infinite;
+}
+
+@keyframes float3D-reverse {
+
+  0%,
+  100% {
+    transform: translateY(0) rotateX(-10deg) rotateY(20deg);
+  }
+
+  50% {
+    transform: translateY(-20px) rotateX(-5deg) rotateY(15deg);
+  }
+}
+
+.animate-float-3d-reverse {
+  animation: float3D-reverse 7s ease-in-out infinite;
+}
+
+/* ─── Base Clay Classes ─── */
+.clay-card {
+  background: #fff;
+  border-radius: 28px;
+  border: none;
+  box-shadow: 8px 8px 0px rgba(124, 58, 237, 0.06), inset 0 -4px 0 rgba(0, 0, 0, 0.05), 0 20px 40px rgba(124, 58, 237, 0.08);
+}
+
+.clay-card-purple {
+  background: var(--brand);
+  color: #fff;
+  border-radius: 24px;
+  box-shadow: 8px 8px 0px rgba(91, 33, 182, 0.25), inset 0 -4px 0 rgba(0, 0, 0, 0.15), 0 20px 40px rgba(124, 58, 237, 0.25);
+}
+
+.clay-card-amber {
+  background: var(--amber);
+  color: #fff;
+  border-radius: 24px;
+  box-shadow: 8px 8px 0px rgba(180, 120, 0, 0.25), inset 0 -4px 0 rgba(0, 0, 0, 0.12), 0 20px 40px rgba(245, 158, 11, 0.2);
+}
+
+.clay-card-mint {
+  background: #10b981;
+  color: #fff;
+  border-radius: 24px;
+  box-shadow: 8px 8px 0px rgba(4, 120, 87, 0.25), inset 0 -4px 0 rgba(0, 0, 0, 0.12), 0 20px 40px rgba(16, 185, 129, 0.2);
+}
+
+.clay-card-sky {
+  background: #0ea5e9;
+  color: #fff;
+  border-radius: 24px;
+  box-shadow: 8px 8px 0px rgba(3, 105, 161, 0.25), inset 0 -4px 0 rgba(0, 0, 0, 0.12), 0 20px 40px rgba(14, 165, 233, 0.2);
+}
+
+.clay-card-pink {
+  background: #db2777;
+  color: #fff;
+  border-radius: 24px;
+  box-shadow: 8px 8px 0px rgba(157, 23, 77, 0.25), inset 0 -4px 0 rgba(0, 0, 0, 0.12), 0 20px 40px rgba(219, 39, 119, 0.2);
+}
+
+/* 🌟 เอฟเฟกต์ Hover สำหรับกล่องสถิติ (Bouncy & Tactile) */
+.hover-bouncy {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.hover-bouncy:hover {
+  transform: translateY(-8px) scale(1.02) rotate(-1.5deg);
+  filter: brightness(1.05);
+}
+
+.clay-card-pink.hover-bouncy:hover {
+  box-shadow: 12px 16px 0px rgba(157, 23, 77, 0.15), inset 0 -4px 0 rgba(0, 0, 0, 0.12), 0 30px 50px rgba(219, 39, 119, 0.3);
+}
+
+.clay-card-amber.hover-bouncy:hover {
+  box-shadow: 12px 16px 0px rgba(180, 120, 0, 0.15), inset 0 -4px 0 rgba(0, 0, 0, 0.12), 0 30px 50px rgba(245, 158, 11, 0.3);
+}
+
+.clay-card-mint.hover-bouncy:hover {
+  box-shadow: 12px 16px 0px rgba(4, 120, 87, 0.15), inset 0 -4px 0 rgba(0, 0, 0, 0.12), 0 30px 50px rgba(16, 185, 129, 0.3);
+}
+
+.clay-card-sky.hover-bouncy:hover {
+  box-shadow: 12px 16px 0px rgba(3, 105, 161, 0.15), inset 0 -4px 0 rgba(0, 0, 0, 0.12), 0 30px 50px rgba(14, 165, 233, 0.3);
+}
+
+.clay-card-purple.hover-bouncy:hover {
+  box-shadow: 12px 16px 0px rgba(91, 33, 182, 0.15), inset 0 -4px 0 rgba(0, 0, 0, 0.15), 0 30px 50px rgba(124, 58, 237, 0.3);
+}
+
+/* Clay Elements */
+.clay-btn-purple {
+  background: var(--brand);
+  color: #fff;
+  padding: 14px 32px;
+  font-size: 18px;
+  border-radius: 100px;
+  box-shadow: 0 6px 0px var(--brand-dk), inset 0 -6px 0 rgba(0, 0, 0, 0.15), 0 12px 32px rgba(124, 58, 237, 0.35);
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 900;
+}
+
+.clay-btn-purple:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 0px var(--brand-dk), inset 0 -6px 0 rgba(0, 0, 0, 0.15), 0 16px 40px rgba(124, 58, 237, 0.45);
+}
+
+.clay-btn-purple:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0px var(--brand-dk), inset 0 -2px 0 rgba(0, 0, 0, 0.15), 0 6px 16px rgba(124, 58, 237, 0.25);
+}
+
+.clay-bar {
+  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.15);
+  border-radius: 100px;
+}
+
+.clay-pie {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), inset 0 4px 10px rgba(255, 255, 255, 0.4);
+}
+
+/* MODAL ANIMATIONS (สำหรับหน้า Members) */
+@keyframes modalPopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-modal-pop {
+  /* ใช้ cubic-bezier ให้เด้งดึ๋งๆ สไตล์ Clay */
+  animation: modalPopIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* ร่องลึกสำหรับช่องค้นหา (Search Bar) */
+.clay-input {
+  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.06), 0 2px 10px rgba(0, 0, 0, 0.02);
+  transition: all 0.3s ease;
+}
+
+.clay-input:focus {
+  box-shadow: inset 0 3px 8px rgba(124, 58, 237, 0.1), 0 4px 16px rgba(124, 58, 237, 0.15);
 }

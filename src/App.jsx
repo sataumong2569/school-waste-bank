@@ -8,6 +8,9 @@ import Footer from './components/Footer';
 import MobileNav from './components/MobileNav';
 import Home from './pages/Home';
 import Members from './pages/Members';
+import Login from './pages/Login';
+import Settings from './pages/Settings';
+
 
 function App() {
   return (
@@ -18,11 +21,9 @@ function App() {
         <Routes>
 
           <Route path="/" element={<Home />} />
-
-          {/* สร้าง Route เปล่าๆ มารองรับหน้าอื่นๆ เวลากดคลิกจะได้ไม่ Error */}
           <Route path="/members" element={<Members />} />
-          <Route path="/orders" element={<h1 className="text-center font-['Fredoka_One'] text-3xl mt-10">นี่คือหน้า รายการรับซื้อ</h1>} />
-          <Route path="/settings" element={<h1 className="text-center font-['Fredoka_One'] text-3xl mt-10">นี่คือหน้า ตั้งค่า</h1>} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/settings" element={<Settings />} />
         </Routes>
       </main>
       <Footer />

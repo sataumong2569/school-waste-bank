@@ -1,34 +1,53 @@
 import { UserIcon, Cog8ToothIcon, ShieldCheckIcon, LightBulbIcon, ArrowRightStartOnRectangleIcon } from '@heroicons/react/24/outline'
+import { Link, useNavigate } from 'react-router-dom';
+// 🟢 Import Firebase Auth สำหรับออกจากระบบ
+import { auth } from '../firebase';
+import { signOut } from 'firebase/auth';
 
 export default function DropdownMenu() {
+    const navigate = useNavigate();
+
+    // 🟢 ฟังก์ชันออกจากระบบ
+    const handleLogout = async (e) => {
+        e.preventDefault(); // ป้องกันการรีเฟรชหน้า
+        try {
+            await signOut(auth); // สั่ง Firebase ให้ออกจากระบบ
+            navigate('/'); // เด้งกลับไปหน้า Home
+        } catch (error) {
+            console.error("Logout Error:", error);
+        }
+    };
+
     return (
-        <div className="absolute right-0 top-16 w-56 bg-white border-[3px] border-[#2d2d2d] rounded-2xl shadow-[6px_6px_0px_#2d2d2d] p-3 flex flex-col gap-1 z-50 animate-fade-in-down">
+        <div className="absolute right-0 top-16 w-56 bg-white rounded-[28px] shadow-[0_12px_40px_rgba(124,58,237,0.12),_inset_0_-4px_0_rgba(0,0,0,0.02)] p-3 flex flex-col gap-1.5 z-50 animate-fade-in-down border border-[#f0eeff]">
 
-            <a href="/my-profile" className="flex items-center gap-3 px-3 py-2 rounded-xl font-bold font-['Nunito'] text-[#2d2d2d] hover:bg-[#fffde7] hover:border-[2px] border-[2px] border-transparent hover:border-[#2d2d2d] transition-all">
-                <UserIcon className="w-5 h-5" /> My profile
-            </a>
+            <Link to="/my-profile" className="flex items-center gap-3 px-3 py-2.5 rounded-2xl font-bold font-['Nunito'] text-[#1e1b4b] hover:bg-[#fef3c7] hover:text-[#d97706] transition-all active:scale-[0.98] active:shadow-[inset_0_3px_6px_rgba(0,0,0,0.05)]">
+                <UserIcon className="w-5 h-5 opacity-80" /> My profile
+            </Link>
 
-            <a href="/settings" className="flex items-center gap-3 px-3 py-2 rounded-xl font-bold font-['Nunito'] text-[#2d2d2d] hover:bg-[#f0fffe] hover:border-[2px] border-[2px] border-transparent hover:border-[#2d2d2d] transition-all">
-                <Cog8ToothIcon className="w-5 h-5" /> Settings
-            </a>
+            <Link to="/settings" className="flex items-center gap-3 px-3 py-2.5 rounded-2xl font-bold font-['Nunito'] text-[#1e1b4b] hover:bg-[#d1fae5] hover:text-[#047857] transition-all active:scale-[0.98] active:shadow-[inset_0_3px_6px_rgba(0,0,0,0.05)]">
+                <Cog8ToothIcon className="w-5 h-5 opacity-80" /> Settings
+            </Link>
 
-            {/* เส้นคั่น */}
-            <div className="h-[3px] bg-[#2d2d2d] my-1 mx-2 rounded-full opacity-20"></div>
+            <div className="h-[2px] bg-[#f0eeff] my-1 mx-2 rounded-full shadow-[inset_0_1px_1px_rgba(0,0,0,0.02)]"></div>
 
-            <a href="/privacy" className="flex items-center gap-3 px-3 py-2 rounded-xl font-bold font-['Nunito'] text-[#2d2d2d] hover:bg-[#fff0f5] hover:border-[2px] border-[2px] border-transparent hover:border-[#2d2d2d] transition-all">
-                <ShieldCheckIcon className="w-5 h-5" /> Privacy policy
-            </a>
+            <Link to="/privacy" className="flex items-center gap-3 px-3 py-2.5 rounded-2xl font-bold font-['Nunito'] text-[#1e1b4b] hover:bg-[#fce7f3] hover:text-[#be185d] transition-all active:scale-[0.98] active:shadow-[inset_0_3px_6px_rgba(0,0,0,0.05)]">
+                <ShieldCheckIcon className="w-5 h-5 opacity-80" /> Privacy policy
+            </Link>
 
-            <a href="/feedback" className="flex items-center gap-3 px-3 py-2 rounded-xl font-bold font-['Nunito'] text-[#2d2d2d] hover:bg-[#f5f0ff] hover:border-[2px] border-[2px] border-transparent hover:border-[#2d2d2d] transition-all">
-                <LightBulbIcon className="w-5 h-5" /> Share feedback
-            </a>
+            <Link to="/feedback" className="flex items-center gap-3 px-3 py-2.5 rounded-2xl font-bold font-['Nunito'] text-[#1e1b4b] hover:bg-[#f3e8ff] hover:text-[#6d28d9] transition-all active:scale-[0.98] active:shadow-[inset_0_3px_6px_rgba(0,0,0,0.05)]">
+                <LightBulbIcon className="w-5 h-5 opacity-80" /> Share feedback
+            </Link>
 
-            {/* เส้นคั่น */}
-            <div className="h-[3px] bg-[#2d2d2d] my-1 mx-2 rounded-full opacity-20"></div>
+            <div className="h-[2px] bg-[#f0eeff] my-1 mx-2 rounded-full shadow-[inset_0_1px_1px_rgba(0,0,0,0.02)]"></div>
 
-            <a href="/logout" className="flex items-center gap-3 px-3 py-2 rounded-xl font-bold font-['Nunito'] text-red-500 hover:bg-[#fff5f0] hover:border-[2px] border-[2px] border-transparent hover:border-red-500 transition-all">
-                <ArrowRightStartOnRectangleIcon className="w-5 h-5" /> Sign out
-            </a>
+            {/* 🟢 เปลี่ยนเป็น <button> และใส่ onClick เพื่อออกจากระบบ */}
+            <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl font-bold font-['Nunito'] text-red-500 hover:bg-[#fee2e2] hover:text-red-700 transition-all active:scale-[0.98] active:shadow-[inset_0_3px_6px_rgba(0,0,0,0.05)]"
+            >
+                <ArrowRightStartOnRectangleIcon className="w-5 h-5 opacity-80" /> Sign out
+            </button>
         </div>
     )
 }

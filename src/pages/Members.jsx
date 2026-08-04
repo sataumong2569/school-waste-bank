@@ -1,426 +1,422 @@
-import { useState, useEffect } from 'react';
-import { XMarkIcon, MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { useState, useEffect, useRef } from 'react';
+import {
+    XMarkIcon, MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon,
+    BookOpenIcon, BeakerIcon, ArrowUpTrayIcon, UsersIcon
+} from '@heroicons/react/24/outline';
 
 export default function Members() {
-    // state สำหรับเก็บข้อมูลคนที่ถูกคลิก (ถ้าเป็น null คือปิดหน้าต่างอยู่)
     const [selectedMember, setSelectedMember] = useState(null);
-
-    // 1. State สำหรับระบบค้นหาและแบ่งหน้า
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 20;
+    const itemsPerPage = 20; // 🟢 ปรับเป็น 20 คนต่อหน้าตามรีเควสต์
 
-    // จำลองข้อมูลสมาชิก (ผมปรับเป็น 45 คนเพื่อให้คุณเทสระบบปุ่มกดเปลี่ยนหน้าได้)
-    const membersList = Array.from({ length: 45 }, (_, i) => ({
-        id: i + 1,
-        name: `สมาชิกคนที่ ${i + 1}`,
-        grade: `ป.${Math.floor(Math.random() * 3) + 4}/${Math.floor(Math.random() * 3) + 1}`,
-        balance: Math.floor(Math.random() * 5000) + 500,
-        carbonPoints: (Math.random() * 50).toFixed(2),
-        image: `https://api.dicebear.com/7.x/notionists/svg?seed=User${i + 1}`,
-        color: ['bg-[#ff6b9d]', 'bg-[#ffd93d]', 'bg-[#4ecdc4]', 'bg-[#a855f7]', 'bg-[#ff6b35]'][i % 5]
-    }));
+    // 🟢 สร้าง Ref สำหรับจับตำแหน่งบนสุดของส่วนรายชื่อ เพื่อให้เด้งกลับมาตอนเปลี่ยนหน้า
+    const membersSectionRef = useRef(null);
 
-    // 2. Logic การค้นหา: กรองจากข้อมูลทั้งหมด
+    // =========================================
+    // 🟢 เตรียมพร้อมสำหรับเชื่อมต่อ Firebase Database & Cloudinary
+    // =========================================
+    // const [membersList, setMembersList] = useState([]);
+    // const [isLoading, setIsLoading] = useState(true);
+    // useEffect(() => {
+    //     const fetchMembers = async () => {
+    //         try {
+    //             const snapshot = await getDocs(collection(db, 'members'));
+    //             const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    //             setMembersList(data);
+    //         } catch (error) { console.error("Error fetching members:", error); }
+    //     };
+    //     fetchMembers();
+    // }, []);
+
+    // 🔴 ข้อมูลจำลอง (Mock-up) 
+    const membersList = Array.from({ length: 45 }, (_, i) => {
+        const mockNames = ['สมชาย รักดี', 'สมหญิง ใจบุญ', 'มานะ ขยันเรียน', 'ปิติ ยินดี', 'ชูใจ ไชโย'];
+        const mockNicknames = ['เอ', 'บี', 'ซี', 'ดี', 'อี'];
+        const nameIndex = i % 5;
+        return {
+            id: `uid_${i + 1}`,
+            fullName: `ด.ช. ${mockNames[nameIndex]} ${i + 1}`,
+            nickname: `น้อง${mockNicknames[nameIndex]}`,
+            grade: `ป.${Math.floor(Math.random() * 3) + 4}/${Math.floor(Math.random() * 3) + 1}`,
+            balance: Math.floor(Math.random() * 5000) + 500,
+            carbonPoints: (Math.random() * 50).toFixed(2),
+            color: ['bg-[#f472b6]', 'bg-[#f59e0b]', 'bg-[#34d399]', 'bg-[#7c3aed]', 'bg-[#38bdf8]'][nameIndex],
+            shadow: ['shadow-[0_8px_16px_rgba(244,114,182,0.3)]', 'shadow-[0_8px_16px_rgba(245,158,11,0.3)]', 'shadow-[0_8px_16px_rgba(52,211,153,0.3)]', 'shadow-[0_8px_16px_rgba(124,58,237,0.3)]', 'shadow-[0_8px_16px_rgba(56,189,248,0.3)]'][nameIndex],
+            // 🟢 เตรียมรองรับ Cloudinary URL
+            image: `https://api.dicebear.com/7.x/notionists/svg?seed=User${i + 1}`,
+            history: [
+                { type: 'พลาสติกรวม', weight: (Math.random() * 5).toFixed(1), date: '2026-08-01' },
+                { type: 'กระดาษลัง', weight: (Math.random() * 10).toFixed(1), date: '2026-07-28' },
+                { type: 'กระป๋องอลูมิเนียม', weight: (Math.random() * 2).toFixed(1), date: '2026-07-15' },
+            ]
+        }
+    });
+
     const filteredMembers = membersList.filter((member) =>
-        member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        member.grade.toLowerCase().includes(searchTerm.toLowerCase())
+        member.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        member.grade.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        member.nickname.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // 3. Logic การแบ่งหน้า: คำนวณหน้า และหั่นข้อมูลมาแสดงเฉพาะหน้าที่เลือก
     const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
-    const displayedMembers = filteredMembers.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
+    const displayedMembers = filteredMembers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-    // 5. คำนวณวันที่สำหรับ Progress Bar 2 รอบ (วันที่ 15 และ 25)
     const today = new Date();
     const currentDay = today.getDate();
+    let progress15 = currentDay >= 15 ? 100 : (currentDay / 15) * 100;
+    let status15 = currentDay >= 15 ? (currentDay === 15 ? "วันนี้" : "รับฝากแล้ว") : `อีก ${15 - currentDay} วัน`;
+    let progress25 = currentDay >= 25 ? 100 : (currentDay / 25) * 100;
+    let status25 = currentDay >= 25 ? (currentDay === 25 ? "วันนี้" : "รับฝากแล้ว") : `อีก ${25 - currentDay} วัน`;
 
-    // เป้าหมายรอบที่ 1: วันที่ 15
-    let progress15 = 0;
-    let status15 = "";
-    if (currentDay >= 15) {
-        progress15 = 100;
-        status15 = currentDay === 15 ? "วันนี้" : "รับฝากแล้ว";
-    } else {
-        // คำนวณเปอร์เซ็นต์แบบ 1-15 วัน
-        progress15 = (currentDay / 15) * 100;
-        status15 = `อีก ${15 - currentDay} วัน`;
-    }
-
-    // เป้าหมายรอบที่ 2: วันที่ 25
-    let progress25 = 0;
-    let status25 = "";
-    if (currentDay >= 25) {
-        progress25 = 100;
-        status25 = currentDay === 25 ? "วันนี้" : "รับฝากแล้ว";
-    } else {
-        // คำนวณเปอร์เซ็นต์แบบ 1-25 วัน
-        progress25 = (currentDay / 25) * 100;
-        status25 = `อีก ${25 - currentDay} วัน`;
-    }
-
-    // ข้อมูลจำลอง Top 3
     const top3Members = [
-        { id: 1, name: 'ด.ญ. รักษ์โลก เสมอมา', consistency: 24, carbon: '45.10', medal: '🥇', color: 'bg-[#ffd93d]' },
-        { id: 2, name: 'ด.ช. เรียนดี ขยันยิ่ง', consistency: 22, carbon: '38.50', medal: '🥈', color: 'bg-[#e5e7eb]' },
-        { id: 3, name: 'นาย ประหยัด อดออม', consistency: 19, carbon: '30.20', medal: '🥉', color: 'bg-[#fcd34d]' },
+        { id: 1, name: 'ด.ญ. รักษ์โลก เสมอมา', consistency: 24, carbon: '45.10', badge: '1st', color: 'bg-[#f59e0b]' },
+        { id: 2, name: 'ด.ช. เรียนดี ขยันยิ่ง', consistency: 22, carbon: '38.50', badge: '2nd', color: 'bg-[#94a3b8]' },
+        { id: 3, name: 'นาย ประหยัด อดออม', consistency: 19, carbon: '30.20', badge: '3rd', color: 'bg-[#fcd34d]' },
     ];
 
-    // 4. Reset กลับไปหน้า 1 เสมอเวลาพิมพ์ค้นหาใหม่
+    // Reset หน้าเวลากดค้นหา
+    useEffect(() => { setCurrentPage(1); }, [searchTerm]);
+
+    // ล็อกหน้าจอหลังไม่ให้เลื่อนตอนเปิด Popup
     useEffect(() => {
-        setCurrentPage(1);
-    }, [searchTerm]);
+        if (selectedMember) document.body.style.overflow = 'hidden';
+        else document.body.style.overflow = 'unset';
+        return () => { document.body.style.overflow = 'unset'; };
+    }, [selectedMember]);
+
+    // 🟢 ฟังก์ชันเปลี่ยนหน้า พร้อมเลื่อนจอไปที่ด้านบนสุดของส่วนสมาชิก
+    const handlePageChange = (newPage) => {
+        setCurrentPage(newPage);
+        if (membersSectionRef.current) {
+            membersSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    };
 
     return (
-        <div className="flex-1 flex flex-col md:flex-row pb-24 md:pb-10 w-full overflow-hidden">
+        <div className="w-full overflow-hidden bg-[#fff7ed] min-h-screen pb-24 md:pb-10">
 
             {/* ========================================= */}
-            {/* ส่วนซ้าย (เนื้อหาหลัก): หัวข้อ, ช่องค้นหา, Widget มือถือ, รายชื่อสมาชิก */}
+            {/* SECTION 1: HEADER & SEARCH */}
             {/* ========================================= */}
-            <div className={`transition-all duration-300 ease-out flex flex-col px-4 md:px-8 pt-6 md:pt-8 h-full ${selectedMember ? 'hidden md:block md:w-full' : 'w-full md:w-[75%]'}`}>
+            <div className="bg-[#f0eeff] pt-8 md:pt-12 pb-10 relative">
+                <div className="max-w-7xl mx-auto px-6 md:px-8 flex flex-col items-center text-center fade-up z-10 relative">
 
-                {/* 1. ส่วนหัวและช่องค้นหา */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-8 gap-4">
-                    <h1 className="font-black text-3xl md:text-4xl text-[#2d2d2d] tracking-wide relative inline-block pb-2">
-                        รายชื่อสมาชิกทั้งหมด
-                        <div className="absolute bottom-0 left-0 w-full h-[4px] bg-[#2d2d2d] rounded-full"></div>
-                        <div className="absolute -bottom-2 left-4 w-3/4 h-[4px] bg-[#ff6b9d] rounded-full"></div>
+                    <div className="inline-flex items-center gap-2 bg-white/60 px-4 py-1.5 rounded-full shadow-[inset_0_2px_4px_rgba(255,255,255,1),_0_4px_10px_rgba(124,58,237,0.1)] backdrop-blur-sm mb-4">
+                        <UsersIcon className="w-4 h-4 text-[#7c3aed]" />
+                        <span className="font-['Nunito'] font-bold text-[#1e1b4b] text-sm">ระบบสมาชิก</span>
+                    </div>
+
+                    <h1 className="text-3xl md:text-5xl font-['Fredoka_One'] text-[#1e1b4b] tracking-wide mb-8">
+                        ค้นหาเพื่อน <span className="text-[#7c3aed]">รักษ์โลก</span>
                     </h1>
 
-                    <div className="relative w-full md:w-72 mt-2 md:mt-0">
-                        <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 font-bold" />
+                    <div className="relative w-full max-w-2xl">
+                        <MagnifyingGlassIcon className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-[#6d6a8a] font-bold z-10" />
                         <input
                             type="text"
-                            placeholder="ค้นหาชื่อ หรือ ชั้นเรียน..."
+                            placeholder="พิมพ์ชื่อ หรือ ชั้นเรียน (เช่น ป.4/1)..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 border-[3px] border-[#2d2d2d] rounded-xl font-bold outline-none focus:bg-[#f0fffe] focus:-translate-y-1 shadow-[4px_4px_0px_#2d2d2d] focus:shadow-[6px_6px_0px_#2d2d2d] transition-all"
+                            className="w-full pl-16 pr-6 py-3.5 md:py-4 rounded-[24px] font-bold outline-none text-[#1e1b4b] text-base md:text-lg clay-input bg-white"
                         />
                     </div>
                 </div>
 
-                {/* ========================================= */}
-                {/* 📱 2. WIDGET สำหรับมือถือ (ซ่อนในคอมพิวเตอร์) */}
-                {/* ========================================= */}
-                <div className="md:hidden flex flex-row gap-3 overflow-x-auto hide-scrollbar snap-x snap-mandatory mb-4 pb-2">
+                {/* 3D Decorator */}
+                <div className="absolute top-8 left-10 w-12 h-12 md:w-16 md:h-16 bg-[#38bdf8] rounded-full animate-float-3d shadow-[inset_-4px_-4px_10px_rgba(0,0,0,0.2),_0_10px_20px_rgba(56,189,248,0.4)] hidden md:block"></div>
+                <div className="absolute bottom-8 right-20 w-16 h-16 md:w-24 md:h-24 bg-[#f59e0b] rounded-[32px] animate-float-3d-reverse rotate-12 shadow-[inset_-4px_-4px_10px_rgba(0,0,0,0.2),_0_10px_20px_rgba(245,158,11,0.4)] hidden md:block"></div>
+            </div>
 
-                    {/* Widget 1: ระยะเวลา (ย่อส่วนตามรูปเป๊ะ) */}
-                    <div className="min-w-[85vw] flex-shrink-0 snap-center bg-[#ffd93d] border-[2px] border-[#2d2d2d] rounded-xl p-3 shadow-[3px_3px_0px_#2d2d2d]">
-                        <div className="text-center mb-2.5">
-                            <h3 className="inline-block text-[10px] font-black bg-white px-2 py-0.5 rounded-full border-[2px] border-[#2d2d2d] text-[#ff6b9d]">
+            <svg viewBox="0 0 1440 100" className="w-full h-[30px] md:h-[60px] block bg-[#f0eeff] text-[#ecfdf5] -mt-1" preserveAspectRatio="none">
+                <path fill="currentColor" d="M0,32L48,42.7C96,53,192,75,288,74.7C384,75,480,53,576,48C672,43,768,53,864,64C960,75,1056,85,1152,74.7C1248,64,1344,32,1392,16L1440,0L1440,100L1392,100C1344,100,1248,100,1152,100C1056,100,960,100,864,100C768,100,672,100,576,100C480,100,384,100,288,100C192,100,96,100,48,100L0,100Z"></path>
+            </svg>
+
+            {/* ========================================= */}
+            {/* SECTION 2: WIDGETS DASHBOARD */}
+            {/* ========================================= */}
+            <div className="bg-[#ecfdf5] pt-4 pb-8">
+                <div className="max-w-7xl mx-auto flex flex-row md:grid md:grid-cols-3 gap-4 md:gap-6 overflow-x-auto snap-x snap-mandatory hide-scrollbar px-6 md:px-8 fade-up pb-4 md:pb-0" style={{ animationDelay: '0.2s' }}>
+
+                    <div className="min-w-[85vw] md:min-w-0 snap-center clay-card-amber p-5 md:p-6 cursor-default">
+                        <div className="text-center mb-5">
+                            <h3 className="inline-block text-[13px] font-black bg-white/20 px-4 py-1.5 rounded-full text-white shadow-[inset_0_2px_4px_rgba(255,255,255,0.3)]">
                                 ระยะเวลากิจกรรมการรับฝาก
                             </h3>
                         </div>
-                        <div className="mb-2">
-                            <div className="flex justify-between items-end mb-1">
-                                <span className="font-bold text-[10px] text-[#2d2d2d]">รอบวันที่ 15</span>
-                                <span className={`px-1.5 py-0.5 rounded-md border-[1.5px] border-[#2d2d2d] text-[8px] font-black tracking-wide ${progress15 === 100 ? 'bg-[#95e1d3]' : 'bg-white'} text-[#2d2d2d]`}>
-                                    {status15}
-                                </span>
+                        <div className="mb-5">
+                            <div className="flex justify-between items-end mb-2">
+                                <span className="font-bold text-sm text-white">รอบวันที่ 15</span>
+                                <span className={`px-3 py-1 rounded-full text-[10px] font-black shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] ${progress15 === 100 ? 'bg-[#10b981] text-white' : 'bg-white/90 text-[#d97706]'}`}>{status15}</span>
                             </div>
-                            <div className="w-full h-2 bg-white border-[1.5px] border-[#2d2d2d] rounded-full overflow-hidden">
-                                <div className="h-full bg-[#ff6b9d] transition-all duration-500" style={{ width: `${progress15}%` }}></div>
+                            <div className="w-full h-4 bg-black/10 rounded-full overflow-hidden shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]">
+                                <div className="h-full bg-[#10b981] clay-bar shadow-[0_0_8px_rgba(16,185,129,0.8)] transition-all duration-500" style={{ width: `${progress15}%` }}></div>
                             </div>
                         </div>
                         <div>
-                            <div className="flex justify-between items-end mb-1">
-                                <span className="font-bold text-[10px] text-[#2d2d2d]">รอบวันที่ 25</span>
-                                <span className={`px-1.5 py-0.5 rounded-md border-[1.5px] border-[#2d2d2d] text-[8px] font-black tracking-wide ${progress25 === 100 ? 'bg-[#95e1d3]' : 'bg-white'} text-[#2d2d2d]`}>
-                                    {status25}
-                                </span>
+                            <div className="flex justify-between items-end mb-2">
+                                <span className="font-bold text-sm text-white">รอบวันที่ 25</span>
+                                <span className={`px-3 py-1 rounded-full text-[10px] font-black shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] ${progress25 === 100 ? 'bg-[#10b981] text-white' : 'bg-white/90 text-[#d97706]'}`}>{status25}</span>
                             </div>
-                            <div className="w-full h-2 bg-white border-[1.5px] border-[#2d2d2d] rounded-full overflow-hidden">
-                                <div className="h-full bg-[#4ecdc4] transition-all duration-500" style={{ width: `${progress25}%` }}></div>
+                            <div className="w-full h-4 bg-black/10 rounded-full overflow-hidden shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]">
+                                <div className="h-full bg-[#10b981] clay-bar shadow-[0_0_8px_rgba(16,185,129,0.8)] transition-all duration-500" style={{ width: `${progress25}%` }}></div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Widget 2: Top 3 (ย่อส่วน) */}
-                    <div className="min-w-[85vw] flex-shrink-0 snap-center bg-white border-[2px] border-[#2d2d2d] rounded-xl p-3 shadow-[3px_3px_0px_#2d2d2d]">
-                        <div className="text-center mb-2.5">
-                            <h3 className="inline-block text-[10px] font-black bg-[#f0fffe] px-2 py-0.5 rounded-full border-[2px] border-[#2d2d2d] text-[#0d9488]">
-                                🏆 Top 3 นำฝากยอดเยี่ยม
+                    <div className="min-w-[85vw] md:min-w-0 snap-center clay-card p-5 md:p-6 cursor-default">
+                        <div className="text-center mb-6">
+                            <h3 className="inline-block text-[13px] font-black bg-[#f0eeff] px-4 py-1.5 rounded-full text-[#7c3aed]">
+                                Top 3 นำฝากยอดเยี่ยม
                             </h3>
                         </div>
-                        <div className="flex flex-col gap-2">
+                        <div className="flex flex-col gap-4">
                             {top3Members.map((member) => (
-                                <div key={member.id} className="flex items-center gap-2">
-                                    <div className={`w-8 h-8 rounded-full border-[2px] border-[#2d2d2d] flex items-center justify-center text-sm shadow-[2px_2px_0px_#2d2d2d] flex-shrink-0 ${member.color}`}>
-                                        {member.medal}
+                                <div key={member.id} className="flex items-center gap-4">
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 shadow-[inset_-3px_-5px_8px_rgba(0,0,0,0.15)] text-white ${member.color}`}>
+                                        {member.badge}
                                     </div>
                                     <div className="flex-1 overflow-hidden">
-                                        <p className="font-black text-[11px] text-[#2d2d2d] truncate">{member.name}</p>
-                                        <p className="text-[9px] font-bold text-[#0d9488] mt-0.5">ฝาก {member.consistency} ครั้ง | ลด {member.carbon} kg</p>
+                                        <p className="font-black text-[14px] text-[#1e1b4b] truncate">{member.name}</p>
+                                        <p className="text-[11px] font-bold text-[#6d6a8a] mt-1">ฝาก {member.consistency} ครั้ง | ลด {member.carbon} kg</p>
                                     </div>
                                 </div>
                             ))}
                         </div>
                     </div>
 
-                    {/* Widget 3: แลกรางวัล (ย่อส่วนแล้ว) */}
-                    <div className="min-w-[85vw] flex-shrink-0 snap-center bg-[#f3e8ff] border-[2px] border-[#2d2d2d] rounded-xl p-3 shadow-[3px_3px_0px_#2d2d2d]">
-                        <div className="text-center mb-2.5">
-                            <h3 className="inline-block text-[10px] font-black bg-white px-2 py-0.5 rounded-full border-[2px] border-[#2d2d2d] text-[#a855f7]">
-                                🎁 แลกรางวัล
+                    <div className="min-w-[85vw] md:min-w-0 snap-center clay-card-purple p-5 md:p-6 cursor-default">
+                        <div className="text-center mb-6">
+                            <h3 className="inline-block text-[13px] font-black bg-white/20 px-4 py-1.5 rounded-full text-white shadow-[inset_0_2px_4px_rgba(255,255,255,0.3)]">
+                                แลกรางวัล (Item Shop)
                             </h3>
                         </div>
-                        {/* ปรับ gap ระหว่างกล่องเป็น 1.5 */}
-                        <div className="flex flex-col gap-1.5">
-                            {/* กล่องที่ 1: ลด padding เป็น px-2 py-1.5 */}
-                            <div className="flex items-center justify-between px-2 py-1.5 bg-white border-[2px] border-[#2d2d2d] rounded-lg">
-                                <div className="flex items-center gap-2">
-                                    {/* ลดขนาดไอคอนเป็น w-6 h-6 และตัวหนังสือ text-xs */}
-                                    <div className="w-6 h-6 bg-[#ffd93d] rounded-md border-[2px] border-[#2d2d2d] flex items-center justify-center text-xs">📓</div>
+                        <div className="flex flex-col gap-3">
+                            <div className="flex items-center justify-between px-4 py-3 bg-white/10 rounded-2xl shadow-[inset_0_2px_6px_rgba(0,0,0,0.1)]">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#7c3aed] shadow-sm"><BookOpenIcon className="w-5 h-5" /></div>
                                     <div>
-                                        {/* ลด mb ลงเหลือ 0.5 */}
-                                        <p className="font-bold text-[11px] text-[#2d2d2d] leading-none mb-0.5">สมุดรีไซเคิล</p>
-                                        <p className="text-[8px] font-black text-[#ff6b9d]">เหลือ 15 ชิ้น</p>
+                                        <p className="font-bold text-sm text-white leading-none mb-1.5">สมุดรีไซเคิล</p>
+                                        <p className="text-[10px] font-black text-white/70">เหลือ 15 ชิ้น</p>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <span className="block font-black text-sm text-[#0d9488] leading-none">20</span>
-                                    <span className="text-[8px] font-bold text-[#555]">kgCO₂</span>
+                                    <span className="block font-black text-xl text-white leading-none mb-0.5">20</span>
+                                    <span className="text-[10px] font-bold text-white/70">kgCO₂</span>
                                 </div>
                             </div>
-
-                            {/* กล่องที่ 2: ลด padding เป็น px-2 py-1.5 */}
-                            <div className="flex items-center justify-between px-2 py-1.5 bg-white border-[2px] border-[#2d2d2d] rounded-lg">
-                                <div className="flex items-center gap-2">
-                                    {/* ลดขนาดไอคอนเป็น w-6 h-6 และตัวหนังสือ text-xs */}
-                                    <div className="w-6 h-6 bg-[#4ecdc4] rounded-md border-[2px] border-[#2d2d2d] flex items-center justify-center text-xs">🥤</div>
+                            <div className="flex items-center justify-between px-4 py-3 bg-white/10 rounded-2xl shadow-[inset_0_2px_6px_rgba(0,0,0,0.1)]">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#7c3aed] shadow-sm"><BeakerIcon className="w-5 h-5" /></div>
                                     <div>
-                                        {/* ลด mb ลงเหลือ 0.5 */}
-                                        <p className="font-bold text-[11px] text-[#2d2d2d] leading-none mb-0.5">แก้วน้ำพกพา</p>
-                                        <p className="text-[8px] font-black text-[#ff6b9d]">เหลือ 3 ชิ้น</p>
+                                        <p className="font-bold text-sm text-white leading-none mb-1.5">แก้วน้ำพกพา</p>
+                                        <p className="text-[10px] font-black text-white/70">เหลือ 3 ชิ้น</p>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <span className="block font-black text-sm text-[#0d9488] leading-none">50</span>
-                                    <span className="text-[8px] font-bold text-[#555]">kgCO₂</span>
+                                    <span className="block font-black text-xl text-white leading-none mb-0.5">50</span>
+                                    <span className="text-[10px] font-bold text-white/70">kgCO₂</span>
                                 </div>
                             </div>
                         </div>
                     </div>
+
                 </div>
+            </div>
 
-                {/* 3. รายชื่อสมาชิกแบบ List Row */}
-                <div className="bg-white border-[3px] border-[#2d2d2d] rounded-2xl shadow-[6px_6px_0px_#2d2d2d] p-3 md:p-6 flex flex-col h-full overflow-hidden">
+            <svg viewBox="0 0 1440 100" className="w-full h-[30px] md:h-[60px] block bg-[#ecfdf5] text-[#fff7ed] -mt-1" preserveAspectRatio="none">
+                <path fill="currentColor" d="M0,64L60,74.7C120,85,240,107,360,101.3C480,96,600,64,720,58.7C840,53,960,75,1080,80C1200,85,1320,75,1380,69.3L1440,64L1440,100L1380,100C1320,100,1200,100,1080,100C960,100,840,100,720,100C600,100,480,100,360,100C240,100,120,100,60,100L0,100Z"></path>
+            </svg>
 
-                    <div className="hidden md:grid grid-cols-[2fr_1fr_1.5fr_1fr] gap-4 px-3 pb-3 border-b-[3px] border-[#2d2d2d] mb-3 font-['Fredoka_One'] text-[#2d2d2d] text-lg">
-                        <div className="text-left">ชื่อ - นามสกุล</div>
-                        <div className="text-center">ยอดเงิน (บาท)</div>
-                        <div className="text-center">ลดคาร์บอน (kgCO2e)</div>
-                        <div className="text-center">สถานะ</div>
-                    </div>
+            {/* ========================================= */}
+            {/* SECTION 3: MEMBERS LIST / GRID */}
+            {/* ========================================= */}
+            {/* 🟢 อ้างอิงจุดนี้เวลาเลื่อนหน้า */}
+            <div ref={membersSectionRef} className="bg-[#fff7ed] pt-6 pb-16 scroll-mt-24">
+                <div className="max-w-7xl mx-auto px-4 md:px-8 fade-up" style={{ animationDelay: '0.4s' }}>
 
-                    <div className="flex flex-col gap-3 overflow-y-auto hide-scrollbar flex-1 min-h-[300px]">
+                    <div className="clay-card p-4 md:p-8 flex flex-col h-full overflow-hidden bg-white">
+
+                        <div className="flex items-center gap-3 mb-6 px-2">
+                            <div className="w-2 h-7 bg-[#f59e0b] rounded-full"></div>
+                            <h2 className="font-['Fredoka_One'] text-2xl text-[#1e1b4b]">ข้อมูลสมาชิก</h2>
+                        </div>
+
                         {displayedMembers.length > 0 ? (
-                            displayedMembers.map((member) => (
-                                <div
-                                    key={member.id}
-                                    onClick={() => setSelectedMember(member)}
-                                    className="flex items-center justify-between md:grid md:grid-cols-[2fr_1fr_1.5fr_1fr] md:gap-4 p-2 md:p-2.5 border-[2px] border-[#2d2d2d] rounded-xl cursor-pointer hover:bg-[#f0fffe] hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_#2d2d2d] transition-all bg-white"
-                                >
-                                    <div className="flex items-center gap-3 w-[60%] md:w-full">
-                                        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full border-[2px] border-[#2d2d2d] ${member.color || 'bg-[#ffd93d]'} flex-shrink-0 overflow-hidden`}>
-                                            <img src={member.image} alt={member.name} loading="lazy" className="w-full h-full object-cover" />
+                            <>
+                                {/* 📱 รูปแบบ LIST: แสดงเฉพาะในมือถือ (md:hidden) */}
+                                <div className="flex flex-col gap-3 md:hidden">
+                                    {displayedMembers.map((member) => (
+                                        <div
+                                            key={member.id}
+                                            onClick={() => setSelectedMember(member)}
+                                            className="flex flex-col p-3 bg-[#fafafa] rounded-[20px] shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] active:bg-[#f0eeff] transition-all cursor-pointer"
+                                        >
+                                            <div className="flex items-center gap-4 mb-2">
+                                                {/* 🟢 ใช้ <img/> เพื่อรองรับ Cloudinary */}
+                                                <div className={`w-14 h-14 rounded-full flex items-center justify-center font-black text-xl text-white flex-shrink-0 clay-sphere ${member.color} overflow-hidden`}>
+                                                    <img src={member.image} alt={member.fullName} loading="lazy" className="w-full h-full object-cover mix-blend-overlay opacity-90" />
+                                                </div>
+                                                <div className="overflow-hidden">
+                                                    <p className="font-bold text-[#1e1b4b] font-['Nunito'] text-sm truncate">{member.fullName}</p>
+                                                    <p className="text-[11px] text-[#6d6a8a] font-bold mt-0.5">ชั้น {member.grade} • {member.nickname}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-between items-center px-1">
+                                                <span className="text-[10px] font-bold text-[#6d6a8a]">ยอดเงิน:</span>
+                                                <p className="font-['Fredoka_One'] text-[#7c3aed] text-lg">{member.balance} บ.</p>
+                                            </div>
+                                            <div className="flex justify-between items-center px-1 mt-1">
+                                                <span className="text-[10px] font-bold text-[#6d6a8a]">คาร์บอน:</span>
+                                                <p className="font-['Fredoka_One'] text-[#10b981] text-lg">{member.carbonPoints} kg</p>
+                                            </div>
                                         </div>
-                                        <div className="overflow-hidden">
-                                            <p className="font-bold text-[#2d2d2d] font-['Nunito'] text-sm md:text-base truncate">{member.name}</p>
-                                            <p className="text-[10px] md:text-xs text-[#555] font-semibold">ชั้น {member.grade}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="hidden md:flex justify-center items-center">
-                                        <p className="font-['Fredoka_One'] text-[#ff6b9d] text-base">{member.balance || 0}</p>
-                                    </div>
-                                    <div className="hidden md:flex justify-center items-center">
-                                        <p className="font-['Fredoka_One'] text-[#0d9488] text-base">{member.carbonPoints}</p>
-                                    </div>
-
-                                    <div className="flex flex-col md:hidden items-end text-[10px] font-bold text-[#555] gap-0.5 w-[40%]">
-                                        <span className="text-[#ff6b9d]">💰 {member.balance || 0} บาท</span>
-                                        <span className="text-[#0d9488]">🌱 {member.carbonPoints} kgCO₂</span>
-                                    </div>
-
-                                    <div className="hidden md:flex justify-center items-center">
-                                        <span className="px-3 py-1 rounded-full text-[10px] font-bold border-2 border-[#2d2d2d] bg-[#95e1d3] text-[#2d2d2d]">กำลังศึกษา</span>
-                                    </div>
+                                    ))}
                                 </div>
-                            ))
+
+                                {/* 💻 รูปแบบ GRID: แสดงเฉพาะในคอมพิวเตอร์ (hidden md:grid) */}
+                                <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-6">
+                                    {displayedMembers.map((member) => (
+                                        <div
+                                            key={member.id}
+                                            onClick={() => setSelectedMember(member)}
+                                            className="bg-[#fafafa] border border-[#f0f0f0] rounded-[24px] p-5 flex flex-col items-center text-center cursor-pointer hover-bouncy group shadow-[0_4px_12px_rgba(0,0,0,0.02)]"
+                                        >
+                                            {/* 🟢 ใช้ <img/> รูปโปรไฟล์ 3D */}
+                                            <div className={`w-24 h-24 rounded-full mb-4 overflow-hidden clay-sphere ${member.color} ${member.shadow} transition-transform group-hover:scale-105 border-[4px] border-white`}>
+                                                <img src={member.image} alt={member.fullName} loading="lazy" className="w-full h-full object-cover mix-blend-overlay opacity-90" />
+                                            </div>
+                                            <p className="font-bold text-[#1e1b4b] font-['Nunito'] text-[15px] mb-1 truncate w-full">{member.fullName}</p>
+                                            <p className="text-xs text-[#6d6a8a] font-bold bg-white border border-[#f0eeff] px-3 py-1 rounded-full shadow-sm mb-4">
+                                                ชั้น {member.grade} • {member.nickname}
+                                            </p>
+                                            <div className="w-full flex justify-between items-center bg-[#f0eeff] rounded-2xl p-3 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]">
+                                                <div className="flex flex-col items-start w-1/2">
+                                                    <span className="text-[10px] font-bold text-[#6d6a8a]">ยอดเงิน</span>
+                                                    <span className="font-['Fredoka_One'] text-[#7c3aed] text-lg truncate w-full text-left">{member.balance}</span>
+                                                </div>
+                                                <div className="h-8 w-[2px] bg-white rounded-full"></div>
+                                                <div className="flex flex-col items-end w-1/2">
+                                                    <span className="text-[10px] font-bold text-[#6d6a8a]">คาร์บอน</span>
+                                                    <span className="font-['Fredoka_One'] text-[#10b981] text-lg truncate w-full text-right">{member.carbonPoints}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
                         ) : (
-                            <div className="flex flex-col items-center justify-center h-40 text-[#555]">
-                                <MagnifyingGlassIcon className="w-10 h-10 mb-2 opacity-50" />
-                                <p className="font-bold font-['Nunito']">ไม่พบข้อมูลที่ค้นหา</p>
+                            <div className="flex flex-col items-center justify-center h-64 text-[#6d6a8a]">
+                                <MagnifyingGlassIcon className="w-16 h-16 mb-4 opacity-30" />
+                                <p className="font-bold font-['Nunito'] text-xl">ไม่พบข้อมูลสมาชิกที่ค้นหา</p>
+                            </div>
+                        )}
+
+                        {/* Pagination  */}
+                        {totalPages > 1 && (
+                            <div className="mt-8 flex justify-between items-center gap-2 md:gap-6 border-t-2 border-[#f0eeff] pt-6 px-2">
+                                <button
+                                    onClick={() => handlePageChange(currentPage - 1)}
+                                    disabled={currentPage === 1}
+                                    className="clay-btn-purple !bg-[#f0eeff] !text-[#7c3aed] !shadow-[0_4px_0px_#ddd6fe] hover:!bg-[#e9e3ff] hover:!shadow-[0_6px_0px_#ddd6fe] active:!shadow-[0_2px_0px_#ddd6fe] px-3 py-2 md:!px-5 md:!py-2.5 text-xs md:!text-sm rounded-[100px] disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap flex items-center gap-1"
+                                >
+                                    <ChevronLeftIcon className="w-4 h-4 md:w-5 md:h-5" />
+                                </button>
+
+                                <span className="font-black font-['Nunito'] text-xs md:text-sm text-[#1e1b4b] bg-[#fafafa] border border-[#f0f0f0] px-4 py-2 md:px-5 md:py-2.5 rounded-full shadow-sm whitespace-nowrap">
+                                    {currentPage} / {totalPages}
+                                </span>
+
+                                <button
+                                    onClick={() => handlePageChange(currentPage + 1)}
+                                    disabled={currentPage === totalPages}
+                                    className="clay-btn-purple px-3 py-2 md:!px-5 md:!py-2.5 text-xs md:!text-sm rounded-[100px] disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap flex items-center gap-1"
+                                >
+                                    <ChevronRightIcon className="w-4 h-4 md:w-5 md:h-5" />
+                                </button>
                             </div>
                         )}
                     </div>
-
-                    {totalPages > 1 && (
-                        <div className="mt-4 md:mt-8 flex justify-between items-center border-t-[3px] border-[#2d2d2d] pt-4">
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                disabled={currentPage === 1}
-                                className="px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm bg-white border-[2.5px] md:border-[3px] border-[#2d2d2d] rounded-xl font-bold font-['Nunito'] shadow-[2px_2px_0px_#2d2d2d] md:shadow-[4px_4px_0px_#2d2d2d] disabled:opacity-50 disabled:shadow-none hover:-translate-y-0.5 transition-all flex items-center gap-1 md:gap-2"
-                            >
-                                <ChevronLeftIcon className="w-3 h-3 md:w-4 md:h-4 font-bold" /> ก่อนหน้า
-                            </button>
-                            <span className="font-bold font-['Nunito'] text-xs md:text-sm text-[#555]">หน้า {currentPage} / {totalPages}</span>
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                disabled={currentPage === totalPages}
-                                className="px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm bg-white border-[2.5px] md:border-[3px] border-[#2d2d2d] rounded-xl font-bold font-['Nunito'] shadow-[2px_2px_0px_#2d2d2d] md:shadow-[4px_4px_0px_#2d2d2d] disabled:opacity-50 disabled:shadow-none hover:-translate-y-0.5 transition-all flex items-center gap-1 md:gap-2"
-                            >
-                                ถัดไป <ChevronRightIcon className="w-3 h-3 md:w-4 md:h-4 font-bold" />
-                            </button>
-                        </div>
-                    )}
                 </div>
             </div>
 
             {/* ========================================= */}
-            {/* 💻 ส่วนขวา: WIDGET สำหรับคอมพิวเตอร์ (ซ่อนในมือถือ) */}
-            {/* ========================================= */}
-            <div className={`hidden md:flex flex-col gap-6 pt-8 pr-8 w-[25%] transition-all duration-300 ease-out overflow-hidden ${selectedMember ? 'md:w-0 md:opacity-0' : 'opacity-100'}`}>
-
-                {/* Widget 1 (คอม) */}
-                <div className="bg-[#ffd93d] border-[3px] border-[#2d2d2d] rounded-2xl p-5 shadow-[6px_6px_0px_#2d2d2d]">
-                    <div className="text-center mb-5">
-                        <h3 className="inline-block text-sm font-black bg-white px-3 py-1.5 rounded-full border-[2px] border-[#2d2d2d] shadow-[2px_2px_0px_#2d2d2d] text-[#ff6b9d] tracking-wide">
-                            ระยะเวลากิจกรรมการรับฝาก
-                        </h3>
-                    </div>
-                    <div className="mb-5">
-                        <div className="flex justify-between items-end mb-2">
-                            <span className="font-bold text-[#2d2d2d]">รอบวันที่ 15</span>
-                            <span className={`px-2 py-0.5 rounded-md border-[2px] border-[#2d2d2d] text-xs font-black tracking-wide ${progress15 === 100 ? 'bg-[#95e1d3] text-[#2d2d2d] shadow-[2px_2px_0px_#2d2d2d]' : 'bg-white text-[#2d2d2d] shadow-[2px_2px_0px_#2d2d2d]'}`}>
-                                {status15}
-                            </span>
-                        </div>
-                        <div className="w-full h-4 bg-white border-[3px] border-[#2d2d2d] rounded-full overflow-hidden shadow-[2px_2px_0px_#2d2d2d]">
-                            <div className="h-full bg-[#ff6b9d] transition-all duration-500 ease-out" style={{ width: `${progress15}%` }}></div>
-                        </div>
-                    </div>
-                    <div>
-                        <div className="flex justify-between items-end mb-2">
-                            <span className="font-bold text-[#2d2d2d]">รอบวันที่ 25</span>
-                            <span className={`px-2 py-0.5 rounded-md border-[2px] border-[#2d2d2d] text-xs font-black tracking-wide ${progress25 === 100 ? 'bg-[#95e1d3] text-[#2d2d2d] shadow-[2px_2px_0px_#2d2d2d]' : 'bg-white text-[#2d2d2d] shadow-[2px_2px_0px_#2d2d2d]'}`}>
-                                {status25}
-                            </span>
-                        </div>
-                        <div className="w-full h-4 bg-white border-[3px] border-[#2d2d2d] rounded-full overflow-hidden shadow-[2px_2px_0px_#2d2d2d]">
-                            <div className="h-full bg-[#4ecdc4] transition-all duration-500 ease-out" style={{ width: `${progress25}%` }}></div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Widget 2 (คอม) */}
-                <div className="bg-white border-[3px] border-[#2d2d2d] rounded-2xl p-5 shadow-[6px_6px_0px_#2d2d2d]">
-                    <div className="text-center mb-5">
-                        <h3 className="inline-block text-sm font-black bg-[#f0fffe] px-3 py-1.5 rounded-full border-[2px] border-[#2d2d2d] shadow-[2px_2px_0px_#2d2d2d] text-[#0d9488]">
-                            🏆 Top 3 นำฝากยอดเยี่ยม
-                        </h3>
-                    </div>
-                    <div className="flex flex-col gap-4">
-                        {top3Members.map((member) => (
-                            <div key={member.id} className="flex items-center gap-3">
-                                <div className={`w-12 h-12 rounded-full border-[3px] border-[#2d2d2d] flex items-center justify-center text-2xl shadow-[3px_3px_0px_#2d2d2d] flex-shrink-0 ${member.color}`}>
-                                    {member.medal}
-                                </div>
-                                <div className="flex-1 overflow-hidden">
-                                    <p className="font-black text-sm text-[#2d2d2d] truncate">{member.name}</p>
-                                    <p className="text-[11px] font-bold text-[#0d9488] mt-0.5">ฝาก {member.consistency} ครั้ง | ลด {member.carbon} kgCO₂e</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Widget 3 (คอม) */}
-                <div className="bg-[#f3e8ff] border-[3px] border-[#2d2d2d] rounded-2xl p-5 shadow-[6px_6px_0px_#2d2d2d]">
-                    <div className="text-center mb-5">
-                        <h3 className="inline-block text-sm font-black bg-white px-3 py-1.5 rounded-full border-[2px] border-[#2d2d2d] shadow-[2px_2px_0px_#2d2d2d] text-[#a855f7]">
-                            🎁 แลกรางวัล
-                        </h3>
-                    </div>
-                    <div className="flex flex-col gap-3">
-                        <div className="flex items-center justify-between p-3 bg-white border-[2px] border-[#2d2d2d] rounded-xl cursor-pointer">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-[#ffd93d] rounded-lg border-[2px] border-[#2d2d2d] flex items-center justify-center text-xl shadow-[2px_2px_0px_#2d2d2d]">📓</div>
-                                <div>
-                                    <p className="font-bold text-sm text-[#2d2d2d] leading-none mb-1">สมุดรีไซเคิล</p>
-                                    <p className="text-[10px] font-black text-[#ff6b9d]">เหลือ 15 ชิ้น</p>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <span className="block font-black text-lg text-[#0d9488] leading-none">20</span>
-                                <span className="text-[10px] font-bold text-[#555]">kgCO₂e</span>
-                            </div>
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-white border-[2px] border-[#2d2d2d] rounded-xl cursor-pointer">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-[#4ecdc4] rounded-lg border-[2px] border-[#2d2d2d] flex items-center justify-center text-xl shadow-[2px_2px_0px_#2d2d2d]">🥤</div>
-                                <div>
-                                    <p className="font-bold text-sm text-[#2d2d2d] leading-none mb-1">แก้วน้ำพกพา</p>
-                                    <p className="text-[10px] font-black text-[#ff6b9d]">เหลือ 3 ชิ้น</p>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <span className="block font-black text-lg text-[#0d9488] leading-none">50</span>
-                                <span className="text-[10px] font-bold text-[#555]">kgCO₂e</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* ========================================= */}
-            {/* หน้าต่างสไลด์ (Drawer) เมื่อกดดูข้อมูลรายบุคคล */}
+            {/* CENTER POP-UP MODAL */}
             {/* ========================================= */}
             {selectedMember && (
-                <div className="fixed inset-0 bg-[#2d2d2d]/40 backdrop-blur-sm z-40 md:hidden transition-opacity" onClick={() => setSelectedMember(null)}></div>
+                <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+
+                    {/* Backdrop เบลอฉากหลัง */}
+                    <div className="absolute inset-0 bg-[#1e1b4b]/40 backdrop-blur-sm transition-opacity" onClick={() => setSelectedMember(null)}></div>
+
+                    {/* 
+                        กล่อง Modal (การ์ด 3D) 
+                        มือถือ: flex-col แนวตั้ง
+                        คอมพิวเตอร์: md:flex-row แนวนอนกว้างๆ
+                    */}
+                    <div className="clay-card relative w-full max-w-sm md:max-w-4xl bg-white p-6 md:p-8 flex flex-col md:flex-row items-center md:items-stretch animate-modal-pop shadow-[0_30px_60px_rgba(0,0,0,0.3)] max-h-[90vh] overflow-y-auto hide-scrollbar gap-6 md:gap-8">
+
+                        <button onClick={() => setSelectedMember(null)} className="absolute top-4 right-4 md:top-6 md:right-6 p-2 bg-[#f8f9fa] rounded-full hover:bg-[#fee2e2] hover:text-red-500 text-[#6d6a8a] transition-colors z-10">
+                            <XMarkIcon className="w-6 h-6 font-bold" />
+                        </button>
+
+                        {/* --- คอลัมน์ 1: รูปและข้อมูลพื้นฐาน (ซ้าย) --- */}
+                        <div className="w-full md:w-1/3 flex flex-col items-center justify-center text-center">
+                            <div className={`w-28 h-28 md:w-40 md:h-40 rounded-full mb-4 border-[6px] border-white shadow-[0_8px_16px_rgba(0,0,0,0.15),_inset_-4px_-6px_10px_rgba(0,0,0,0.2)] overflow-hidden ${selectedMember.color || 'bg-[#7c3aed]'}`}>
+                                <img src={selectedMember.image} alt="Profile" className="w-full h-full object-cover mix-blend-overlay opacity-90" />
+                            </div>
+                            <h2 className="font-['Fredoka_One'] text-3xl md:text-4xl text-[#1e1b4b] mb-1">{selectedMember.nickname}</h2>
+                            <p className="font-['Nunito'] font-bold text-[#6d6a8a] mb-4 text-sm md:text-base">{selectedMember.fullName}</p>
+                            <div className="bg-[#f0eeff] px-4 py-1.5 rounded-full shadow-[inset_0_2px_4px_rgba(0,0,0,0.03)]">
+                                <span className="font-['Nunito'] font-bold text-[#7c3aed] text-xs md:text-sm">ชั้น {selectedMember.grade}</span>
+                            </div>
+                        </div>
+
+                        {/* เส้นคั่นแนวตั้ง (แสดงเฉพาะคอมพิวเตอร์) */}
+                        <div className="hidden md:block w-[2px] bg-[#f0eeff] rounded-full shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"></div>
+
+                        {/* --- คอลัมน์ 2: ข้อมูลการเงิน/คาร์บอน (กลาง) --- */}
+                        <div className="w-full md:w-1/3 flex flex-row md:flex-col gap-3 justify-center">
+                            <div className="flex-1 bg-[#fafafa] rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center shadow-[inset_0_3px_6px_rgba(0,0,0,0.04)] border border-[#f0f0f0]">
+                                <span className="font-['Nunito'] font-bold text-[#6d6a8a] mb-1 md:mb-2 text-[10px] md:text-sm">ยอดเงินสะสม</span>
+                                <span className="font-['Fredoka_One'] text-2xl md:text-5xl text-[#7c3aed]">{selectedMember.balance}</span>
+                                <span className="font-['Nunito'] font-bold text-[10px] md:text-sm text-[#1e1b4b] mt-1">บาท</span>
+                            </div>
+
+                            <div className="flex-1 bg-[#fafafa] rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center shadow-[inset_0_3px_6px_rgba(0,0,0,0.04)] border border-[#f0f0f0]">
+                                <span className="font-['Nunito'] font-bold text-[#6d6a8a] mb-1 md:mb-2 text-[10px] md:text-sm">ลดคาร์บอน</span>
+                                <span className="font-['Fredoka_One'] text-2xl md:text-5xl text-[#10b981]">{selectedMember.carbonPoints}</span>
+                                <span className="font-['Nunito'] font-bold text-[10px] md:text-sm text-[#1e1b4b] mt-1">kgCO₂e</span>
+                            </div>
+                        </div>
+
+                        {/* เส้นคั่นแนวตั้ง (แสดงเฉพาะคอมพิวเตอร์) */}
+                        <div className="hidden md:block w-[2px] bg-[#f0eeff] rounded-full shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"></div>
+
+                        {/* --- คอลัมน์ 3: ประวัติการฝากสีเทาเข้ม (ขวา) --- */}
+                        <div className="w-full md:w-1/3 flex flex-col bg-[#e2e8f0] rounded-[24px] p-4 md:p-5 shadow-[inset_0_4px_10px_rgba(0,0,0,0.05)] border border-[#cbd5e1]/50">
+                            <div className="flex items-center gap-2 mb-4 px-1">
+                                <ArrowUpTrayIcon className="w-4 h-4 md:w-5 md:h-5 text-[#1e1b4b] stroke-2" />
+                                <h3 className="font-['Fredoka_One'] text-sm md:text-lg text-[#1e1b4b]">ประวัติการฝากล่าสุด</h3>
+                            </div>
+
+                            <div className="flex flex-col gap-2 max-h-40 md:max-h-full overflow-y-auto hide-scrollbar pr-1 flex-1">
+                                {selectedMember.history.map((hist, idx) => (
+                                    <div key={idx} className="flex justify-between items-center bg-white px-4 py-3 rounded-xl shadow-sm">
+                                        <div className="flex flex-col">
+                                            <span className="font-bold text-[#1e1b4b] text-xs md:text-sm">{hist.type}</span>
+                                            <span className="text-[9px] md:text-[10px] text-[#6d6a8a] font-semibold">{hist.date}</span>
+                                        </div>
+                                        <span className="font-black text-[#10b981] text-sm md:text-lg">{hist.weight} <span className="text-[10px] md:text-xs font-['Nunito'] text-[#6d6a8a]">กก.</span></span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
             )}
 
-            <div className={`fixed top-0 right-0 h-full w-full md:w-[40%] bg-[#fef9f0] border-l-[4px] border-[#2d2d2d] shadow-[-12px_0px_0px_rgba(45,45,45,1)] z-50 transform transition-transform duration-300 ease-out overflow-y-auto ${selectedMember ? 'translate-x-0' : 'translate-x-full'}`}>
-                {selectedMember && (
-                    <div className="p-8 flex flex-col items-center relative min-h-full">
-                        <button onClick={() => setSelectedMember(null)} className="absolute top-6 right-6 p-2 bg-white border-[2px] border-[#2d2d2d] rounded-lg shadow-[2px_2px_0px_#2d2d2d] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_#2d2d2d] active:translate-y-0 active:shadow-[2px_2px_0px_#2d2d2d] transition-all z-10">
-                            <XMarkIcon className="w-6 h-6 font-bold text-[#2d2d2d]" />
-                        </button>
-
-                        <div className={`w-28 h-28 md:w-32 md:h-32 rounded-full border-[4px] border-[#2d2d2d] ${selectedMember.color || 'bg-[#ff6b9d]'} shadow-[6px_6px_0px_#2d2d2d] overflow-hidden mb-4 mt-8`}>
-                            <img src={selectedMember.image} alt="Profile" className="w-full h-full object-cover" />
-                        </div>
-
-                        <h2 className="font-['Fredoka_One'] text-2xl md:text-3xl text-[#2d2d2d] mb-1 text-center">{selectedMember.name}</h2>
-                        <p className="font-['Nunito'] font-bold text-[#666] mb-6 text-base md:text-lg">ชั้น {selectedMember.grade}</p>
-
-                        <div className="w-full grid grid-cols-2 gap-4 mb-8">
-                            <div className="bg-white border-[3px] border-[#2d2d2d] rounded-2xl p-4 flex flex-col items-center justify-center shadow-[4px_4px_0px_#2d2d2d]">
-                                <span className="font-['Nunito'] font-bold text-[#555] mb-1 text-xs md:text-sm">ยอดเงินคงเหลือ</span>
-                                <span className="font-['Fredoka_One'] text-2xl md:text-4xl text-[#ff6b9d]">{selectedMember.balance}</span>
-                                <span className="font-['Nunito'] font-bold text-sm text-[#2d2d2d] mt-1">บาท</span>
-                            </div>
-
-                            <div className="bg-white border-[3px] border-[#2d2d2d] rounded-2xl p-4 flex flex-col items-center justify-center shadow-[4px_4px_0px_#2d2d2d]">
-                                <span className="font-['Nunito'] font-bold text-[#555] mb-1 text-xs md:text-sm">ลดคาร์บอน</span>
-                                <span className="font-['Fredoka_One'] text-2xl md:text-4xl text-[#0d9488]">{selectedMember.carbonPoints}</span>
-                                <span className="font-['Nunito'] font-bold text-sm text-[#2d2d2d] mt-1">kgCO₂e</span>
-                            </div>
-                        </div>
-
-                        <button className="w-full bg-[#ffd93d] border-[3px] border-[#2d2d2d] rounded-xl py-3 font-['Fredoka_One'] text-[#2d2d2d] text-lg shadow-[4px_4px_0px_#2d2d2d] hover:-translate-y-1 hover:shadow-[6px_6px_0px_#2d2d2d] active:translate-y-0 transition-all mb-4">
-                            ประวัติการฝาก
-                        </button>
-                        <button className="w-full bg-white border-[3px] border-[#2d2d2d] rounded-xl py-3 font-['Fredoka_One'] text-[#2d2d2d] text-lg shadow-[4px_4px_0px_#2d2d2d] hover:-translate-y-1 hover:shadow-[6px_6px_0px_#2d2d2d] active:translate-y-0 transition-all">
-                            📌 แชร์ความสำเร็จ
-                        </button>
-                    </div>
-                )}
-            </div>
         </div>
     )
 }
