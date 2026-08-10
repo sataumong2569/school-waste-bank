@@ -8,9 +8,8 @@ export default function Members() {
     const [selectedMember, setSelectedMember] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 20; // 🟢 ปรับเป็น 20 คนต่อหน้าตามรีเควสต์
+    const itemsPerPage = 20;
 
-    // 🟢 สร้าง Ref สำหรับจับตำแหน่งบนสุดของส่วนรายชื่อ เพื่อให้เด้งกลับมาตอนเปลี่ยนหน้า
     const membersSectionRef = useRef(null);
 
     // =========================================
@@ -43,7 +42,6 @@ export default function Members() {
             carbonPoints: (Math.random() * 50).toFixed(2),
             color: ['bg-[#f472b6]', 'bg-[#f59e0b]', 'bg-[#34d399]', 'bg-[#7c3aed]', 'bg-[#38bdf8]'][nameIndex],
             shadow: ['shadow-[0_8px_16px_rgba(244,114,182,0.3)]', 'shadow-[0_8px_16px_rgba(245,158,11,0.3)]', 'shadow-[0_8px_16px_rgba(52,211,153,0.3)]', 'shadow-[0_8px_16px_rgba(124,58,237,0.3)]', 'shadow-[0_8px_16px_rgba(56,189,248,0.3)]'][nameIndex],
-            // 🟢 เตรียมรองรับ Cloudinary URL
             image: `https://api.dicebear.com/7.x/notionists/svg?seed=User${i + 1}`,
             history: [
                 { type: 'พลาสติกรวม', weight: (Math.random() * 5).toFixed(1), date: '2026-08-01' },
@@ -75,17 +73,14 @@ export default function Members() {
         { id: 3, name: 'นาย ประหยัด อดออม', consistency: 19, carbon: '30.20', badge: '3rd', color: 'bg-[#fcd34d]' },
     ];
 
-    // Reset หน้าเวลากดค้นหา
     useEffect(() => { setCurrentPage(1); }, [searchTerm]);
 
-    // ล็อกหน้าจอหลังไม่ให้เลื่อนตอนเปิด Popup
     useEffect(() => {
         if (selectedMember) document.body.style.overflow = 'hidden';
         else document.body.style.overflow = 'unset';
         return () => { document.body.style.overflow = 'unset'; };
     }, [selectedMember]);
 
-    // 🟢 ฟังก์ชันเปลี่ยนหน้า พร้อมเลื่อนจอไปที่ด้านบนสุดของส่วนสมาชิก
     const handlePageChange = (newPage) => {
         setCurrentPage(newPage);
         if (membersSectionRef.current) {
@@ -94,12 +89,13 @@ export default function Members() {
     };
 
     return (
-        <div className="w-full overflow-hidden bg-[#fff7ed] min-h-screen pb-24 md:pb-10">
+        // 🟢 เปลี่ยนคลาสครอบนอกสุด ลบสีพื้นหลังออก เพื่อให้ก้อนข้างในกำหนดสีเองได้เต็มจอ
+        <div className="w-full overflow-hidden min-h-screen flex flex-col">
 
             {/* ========================================= */}
-            {/* SECTION 1: HEADER & SEARCH */}
+            {/* SECTION 1: HEADER & SEARCH (สีม่วงอ่อน กางเต็มจอ) */}
             {/* ========================================= */}
-            <div className="bg-[#f0eeff] pt-8 md:pt-12 pb-10 relative">
+            <div className="w-full bg-[#f0eeff] pt-8 md:pt-12 pb-10 relative">
                 <div className="max-w-7xl mx-auto px-6 md:px-8 flex flex-col items-center text-center fade-up z-10 relative">
 
                     <div className="inline-flex items-center gap-2 bg-white/60 px-4 py-1.5 rounded-full shadow-[inset_0_2px_4px_rgba(255,255,255,1),_0_4px_10px_rgba(124,58,237,0.1)] backdrop-blur-sm mb-4">
@@ -128,14 +124,15 @@ export default function Members() {
                 <div className="absolute bottom-8 right-20 w-16 h-16 md:w-24 md:h-24 bg-[#f59e0b] rounded-[32px] animate-float-3d-reverse rotate-12 shadow-[inset_-4px_-4px_10px_rgba(0,0,0,0.2),_0_10px_20px_rgba(245,158,11,0.4)] hidden md:block"></div>
             </div>
 
+            {/* 🌊 เส้นคลื่นคั่นระหว่าง สีม่วงอ่อน (บน) และ สีมิ้นต์อ่อน (ล่าง) */}
             <svg viewBox="0 0 1440 100" className="w-full h-[30px] md:h-[60px] block bg-[#f0eeff] text-[#ecfdf5] -mt-1" preserveAspectRatio="none">
                 <path fill="currentColor" d="M0,32L48,42.7C96,53,192,75,288,74.7C384,75,480,53,576,48C672,43,768,53,864,64C960,75,1056,85,1152,74.7C1248,64,1344,32,1392,16L1440,0L1440,100L1392,100C1344,100,1248,100,1152,100C1056,100,960,100,864,100C768,100,672,100,576,100C480,100,384,100,288,100C192,100,96,100,48,100L0,100Z"></path>
             </svg>
 
             {/* ========================================= */}
-            {/* SECTION 2: WIDGETS DASHBOARD */}
+            {/* SECTION 2: WIDGETS DASHBOARD (สีมิ้นต์อ่อน กางเต็มจอ) */}
             {/* ========================================= */}
-            <div className="bg-[#ecfdf5] pt-4 pb-8">
+            <div className="w-full bg-[#ecfdf5] pt-4 pb-8">
                 <div className="max-w-7xl mx-auto flex flex-row md:grid md:grid-cols-3 gap-4 md:gap-6 overflow-x-auto snap-x snap-mandatory hide-scrollbar px-6 md:px-8 fade-up pb-4 md:pb-0" style={{ animationDelay: '0.2s' }}>
 
                     <div className="min-w-[85vw] md:min-w-0 snap-center clay-card-amber p-5 md:p-6 cursor-default">
@@ -224,15 +221,15 @@ export default function Members() {
                 </div>
             </div>
 
+            {/* 🌊 เส้นคลื่นคั่นระหว่าง สีมิ้นต์อ่อน (บน) และ สีพีชอ่อน (ล่าง) */}
             <svg viewBox="0 0 1440 100" className="w-full h-[30px] md:h-[60px] block bg-[#ecfdf5] text-[#fff7ed] -mt-1" preserveAspectRatio="none">
                 <path fill="currentColor" d="M0,64L60,74.7C120,85,240,107,360,101.3C480,96,600,64,720,58.7C840,53,960,75,1080,80C1200,85,1320,75,1380,69.3L1440,64L1440,100L1380,100C1320,100,1200,100,1080,100C960,100,840,100,720,100C600,100,480,100,360,100C240,100,120,100,60,100L0,100Z"></path>
             </svg>
 
             {/* ========================================= */}
-            {/* SECTION 3: MEMBERS LIST / GRID */}
+            {/* SECTION 3: MEMBERS LIST / GRID (สีพีชอ่อน กางเต็มจอ) */}
             {/* ========================================= */}
-            {/* 🟢 อ้างอิงจุดนี้เวลาเลื่อนหน้า */}
-            <div ref={membersSectionRef} className="bg-[#fff7ed] pt-6 pb-16 scroll-mt-24">
+            <div ref={membersSectionRef} className="w-full bg-[#fff7ed] pt-6 pb-16 flex-1 scroll-mt-24">
                 <div className="max-w-7xl mx-auto px-4 md:px-8 fade-up" style={{ animationDelay: '0.4s' }}>
 
                     <div className="clay-card p-4 md:p-8 flex flex-col h-full overflow-hidden bg-white">
@@ -253,7 +250,6 @@ export default function Members() {
                                             className="flex flex-col p-3 bg-[#fafafa] rounded-[20px] shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] active:bg-[#f0eeff] transition-all cursor-pointer"
                                         >
                                             <div className="flex items-center gap-4 mb-2">
-                                                {/* 🟢 ใช้ <img/> เพื่อรองรับ Cloudinary */}
                                                 <div className={`w-14 h-14 rounded-full flex items-center justify-center font-black text-xl text-white flex-shrink-0 clay-sphere ${member.color} overflow-hidden`}>
                                                     <img src={member.image} alt={member.fullName} loading="lazy" className="w-full h-full object-cover mix-blend-overlay opacity-90" />
                                                 </div>
@@ -282,7 +278,6 @@ export default function Members() {
                                             onClick={() => setSelectedMember(member)}
                                             className="bg-[#fafafa] border border-[#f0f0f0] rounded-[24px] p-5 flex flex-col items-center text-center cursor-pointer hover-bouncy group shadow-[0_4px_12px_rgba(0,0,0,0.02)]"
                                         >
-                                            {/* 🟢 ใช้ <img/> รูปโปรไฟล์ 3D */}
                                             <div className={`w-24 h-24 rounded-full mb-4 overflow-hidden clay-sphere ${member.color} ${member.shadow} transition-transform group-hover:scale-105 border-[4px] border-white`}>
                                                 <img src={member.image} alt={member.fullName} loading="lazy" className="w-full h-full object-cover mix-blend-overlay opacity-90" />
                                             </div>
@@ -346,21 +341,14 @@ export default function Members() {
             {selectedMember && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
 
-                    {/* Backdrop เบลอฉากหลัง */}
                     <div className="absolute inset-0 bg-[#1e1b4b]/40 backdrop-blur-sm transition-opacity" onClick={() => setSelectedMember(null)}></div>
 
-                    {/* 
-                        กล่อง Modal (การ์ด 3D) 
-                        มือถือ: flex-col แนวตั้ง
-                        คอมพิวเตอร์: md:flex-row แนวนอนกว้างๆ
-                    */}
                     <div className="clay-card relative w-full max-w-sm md:max-w-4xl bg-white p-6 md:p-8 flex flex-col md:flex-row items-center md:items-stretch animate-modal-pop shadow-[0_30px_60px_rgba(0,0,0,0.3)] max-h-[90vh] overflow-y-auto hide-scrollbar gap-6 md:gap-8">
 
                         <button onClick={() => setSelectedMember(null)} className="absolute top-4 right-4 md:top-6 md:right-6 p-2 bg-[#f8f9fa] rounded-full hover:bg-[#fee2e2] hover:text-red-500 text-[#6d6a8a] transition-colors z-10">
                             <XMarkIcon className="w-6 h-6 font-bold" />
                         </button>
 
-                        {/* --- คอลัมน์ 1: รูปและข้อมูลพื้นฐาน (ซ้าย) --- */}
                         <div className="w-full md:w-1/3 flex flex-col items-center justify-center text-center">
                             <div className={`w-28 h-28 md:w-40 md:h-40 rounded-full mb-4 border-[6px] border-white shadow-[0_8px_16px_rgba(0,0,0,0.15),_inset_-4px_-6px_10px_rgba(0,0,0,0.2)] overflow-hidden ${selectedMember.color || 'bg-[#7c3aed]'}`}>
                                 <img src={selectedMember.image} alt="Profile" className="w-full h-full object-cover mix-blend-overlay opacity-90" />
@@ -372,10 +360,8 @@ export default function Members() {
                             </div>
                         </div>
 
-                        {/* เส้นคั่นแนวตั้ง (แสดงเฉพาะคอมพิวเตอร์) */}
                         <div className="hidden md:block w-[2px] bg-[#f0eeff] rounded-full shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"></div>
 
-                        {/* --- คอลัมน์ 2: ข้อมูลการเงิน/คาร์บอน (กลาง) --- */}
                         <div className="w-full md:w-1/3 flex flex-row md:flex-col gap-3 justify-center">
                             <div className="flex-1 bg-[#fafafa] rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center shadow-[inset_0_3px_6px_rgba(0,0,0,0.04)] border border-[#f0f0f0]">
                                 <span className="font-['Nunito'] font-bold text-[#6d6a8a] mb-1 md:mb-2 text-[10px] md:text-sm">ยอดเงินสะสม</span>
@@ -390,10 +376,8 @@ export default function Members() {
                             </div>
                         </div>
 
-                        {/* เส้นคั่นแนวตั้ง (แสดงเฉพาะคอมพิวเตอร์) */}
                         <div className="hidden md:block w-[2px] bg-[#f0eeff] rounded-full shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"></div>
 
-                        {/* --- คอลัมน์ 3: ประวัติการฝากสีเทาเข้ม (ขวา) --- */}
                         <div className="w-full md:w-1/3 flex flex-col bg-[#e2e8f0] rounded-[24px] p-4 md:p-5 shadow-[inset_0_4px_10px_rgba(0,0,0,0.05)] border border-[#cbd5e1]/50">
                             <div className="flex items-center gap-2 mb-4 px-1">
                                 <ArrowUpTrayIcon className="w-4 h-4 md:w-5 md:h-5 text-[#1e1b4b] stroke-2" />

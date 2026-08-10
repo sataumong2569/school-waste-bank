@@ -10,20 +10,22 @@ import Home from './pages/Home';
 import Members from './pages/Members';
 import Login from './pages/Login';
 import Settings from './pages/Settings';
+import SystemConfig from './pages/SystemConfig';
 
 
 function App() {
   return (
-    <div className="min-h-screen bg-[#fef9f0] font-['Nunito'] pb-12">
+    <div className="min-h-screen bg-white font-['Nunito'] flex flex-col">
       <Navbar />
 
-      <main className="p-8">
+      <main className="w-full flex-1">
         <Routes>
 
           <Route path="/" element={<Home />} />
           <Route path="/members" element={<Members />} />
           <Route path="/login" element={<Login />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/system-config" element={<SystemConfig />} />
         </Routes>
       </main>
       <Footer />

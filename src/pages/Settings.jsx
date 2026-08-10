@@ -1,36 +1,50 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
     MagnifyingGlassIcon, PlusIcon, PencilSquareIcon, XMarkIcon,
-    UserIcon, UsersIcon, BanknotesIcon, GlobeAsiaAustraliaIcon,
-    ArrowDownTrayIcon, Cog8ToothIcon
+    UsersIcon, BanknotesIcon, GlobeAsiaAustraliaIcon, CameraIcon,
+    ChevronLeftIcon, ChevronRightIcon, ScaleIcon, TrashIcon, Cog8ToothIcon,
+    UserPlusIcon, PencilIcon, ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
 
-export default function Settings() {
-    // States สำหรับจัดการ Modal
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [modalMode, setModalMode] = useState('add');
-    const [formData, setFormData] = useState({});
-    const [searchTerm, setSearchTerm] = useState('');
+import { WASTE_CATEGORIES, DEFAULT_PRICES } from '../utils/wasteConfig';
 
-    // ข้อมูลสมาชิก Mock-up
+export default function Settings() {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalMode, setModalMode] = useState('');
+    const [formData, setFormData] = useState({});
+
+    // States สำหรับระบบ "รับฝากขยะ (ตะกร้า)"
+    const [depositMemberSearch, setDepositMemberSearch] = useState('');
+    const [selectedDepositMember, setSelectedDepositMember] = useState(null);
+    const [depositCart, setDepositCart] = useState([]);
+    const [currentDepositItem, setCurrentDepositItem] = useState({ category: 'plastic', item: 'พลาสติกรวม', weight: '' });
+
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10; // 🟢 ปรับเป็น 10 คนต่อหน้า
+
     const mockMembers = [
-        { id: '1', fullName: 'ด.ช. สมชาย รักดี', nickname: 'น้องเอ', grade: 'ป.4/1', balance: 1250, carbonPoints: 45.10, color: 'bg-[#f472b6]' },
-        { id: '2', fullName: 'ด.ญ. สมหญิง ใจบุญ', nickname: 'น้องบี', grade: 'ป.5/2', balance: 980, carbonPoints: 38.50, color: 'bg-[#f59e0b]' },
-        { id: '3', fullName: 'ด.ช. มานะ ขยันเรียน', nickname: 'น้องซี', grade: 'ป.6/1', balance: 840, carbonPoints: 30.20, color: 'bg-[#34d399]' },
-        { id: '4', fullName: 'ด.ญ. ปิติ ยินดี', nickname: 'น้องดี', grade: 'ป.3/3', balance: 720, carbonPoints: 22.40, color: 'bg-[#7c3aed]' },
-        { id: '5', fullName: 'นาย ประหยัด อดออม', nickname: 'น้องอี', grade: 'ม.1/1', balance: 2100, carbonPoints: 85.00, color: 'bg-[#38bdf8]' },
+        { id: '1', fullName: 'ด.ช. สมชาย รักดี', nickname: 'น้องเอ', grade: 'ป.4/1', balance: 1250, carbonPoints: 45.10, color: 'bg-[#f472b6]', status: 'กำลังศึกษา' },
+        { id: '2', fullName: 'ด.ญ. สมหญิง ใจบุญ', nickname: 'น้องบี', grade: 'ป.5/2', balance: 980, carbonPoints: 38.50, color: 'bg-[#f59e0b]', status: 'กำลังศึกษา' },
+        { id: '3', fullName: 'ด.ช. มานะ ขยันเรียน', nickname: 'น้องซี', grade: 'ป.6/1', balance: 840, carbonPoints: 30.20, color: 'bg-[#34d399]', status: 'กำลังศึกษา' },
     ];
 
-    const filteredMembers = mockMembers.filter(member =>
-        member.fullName.includes(searchTerm) || member.grade.includes(searchTerm)
-    );
+    const filteredMembers = mockMembers.filter(member => member.fullName.includes(searchTerm) || member.grade.includes(searchTerm));
+    const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
+    const displayedMembers = filteredMembers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     const openModal = (mode, memberData = null) => {
         setModalMode(mode);
         if (mode === 'edit' && memberData) {
             setFormData(memberData);
-        } else {
-            setFormData({ fullName: '', nickname: '', grade: '', balance: '', carbonPoints: '' });
+        } else if (mode === 'add') {
+            setFormData({ fullName: '', nickname: '', grade: '', balance: 0, carbonPoints: 0, status: 'กำลังศึกษา', color: 'bg-[#3b82f6]' });
+        } else if (mode === 'deposit') {
+            setDepositCart([]);
+            setSelectedDepositMember(null);
+            setDepositMemberSearch('');
+            setCurrentDepositItem({ category: 'plastic', item: 'พลาสติกรวม', weight: '' });
         }
         setIsModalOpen(true);
         document.body.style.overflow = 'hidden';
@@ -41,6 +55,30 @@ export default function Settings() {
         document.body.style.overflow = 'unset';
     };
 
+    const handleExport = () => { alert("ระบบจำลอง: ส่งออกข้อมูลเป็นไฟล์ Excel (.csv) สำเร็จ!"); };
+
+    const handleAddToCart = () => {
+        if (!currentDepositItem.weight || currentDepositItem.weight <= 0) return;
+        const pricePerKg = DEFAULT_PRICES[currentDepositItem.item] || 0;
+        const multiplier = WASTE_CATEGORIES[currentDepositItem.category].carbonMultiplier;
+
+        const newItem = {
+            id: Date.now(),
+            ...currentDepositItem,
+            totalPrice: parseFloat(currentDepositItem.weight) * pricePerKg,
+            totalCarbon: parseFloat(currentDepositItem.weight) * multiplier
+        };
+        setDepositCart([...depositCart, newItem]);
+        setCurrentDepositItem({ ...currentDepositItem, weight: '' });
+    };
+
+    const handleRemoveFromCart = (idToRemove) => {
+        setDepositCart(depositCart.filter(item => item.id !== idToRemove));
+    };
+
+    const cartTotalMoney = depositCart.reduce((sum, item) => sum + item.totalPrice, 0).toFixed(2);
+    const cartTotalCarbon = depositCart.reduce((sum, item) => sum + item.totalCarbon, 0).toFixed(4);
+
     const handleSave = (e) => {
         e.preventDefault();
         console.log(`บันทึกข้อมูลโหมด ${modalMode}:`, formData);
@@ -48,233 +86,439 @@ export default function Settings() {
     };
 
     return (
-        <div className="w-full bg-[#fafafa] min-h-screen pb-20 pt-8 font-['Nunito']">
-            <div className="max-w-6xl mx-auto px-4 md:px-8 fade-up">
-                {/* =================================================== */}
-                {/* 1. ส่วนบน: 2 กล่อง (อ้างอิงสไตล์จากภาพ Per-Style Spec Layers / How to Use) */}
-                {/* =================================================== */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="w-full min-h-screen font-['Nunito'] flex flex-col">
 
-                    {/* กล่องซ้าย: ข้อมูลภาพรวม (Overview Layers) */}
-                    <div className="bg-white rounded-2xl border border-[#e2e8f0] p-6 shadow-sm">
-                        <h2 className="font-bold text-[#0f172a] text-lg mb-1">System Overview Layers</h2>
-                        <p className="text-[#64748b] text-xs mb-6 font-semibold">Everything you need to monitor production-ready stats</p>
+            {/* =================================================== */}
+            {/* ส่วนที่ 1: สีขาว (Overview & Quick Actions) */}
+            {/* =================================================== */}
+            <div className="bg-white pt-8 pb-4 w-full"> {/* ลด pb-10 เป็น pb-4 เพื่อลดระยะห่าง */}
+                <div className="max-w-6xl mx-auto px-4 md:px-8 fade-up">
 
-                        <div className="flex flex-col gap-5">
-                            <div className="flex items-start gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-[#eff6ff] text-[#3b82f6] flex items-center justify-center flex-shrink-0">
-                                    <UsersIcon className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-[#0f172a] text-sm mb-0.5">Total Members</h3>
-                                    <p className="text-xs text-[#64748b] font-semibold">สมาชิกทั้งหมดในระบบจำนวน 170 คน</p>
-                                </div>
+
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
+                        <div className="bg-white rounded-2xl border border-[#e2e8f0] p-6 shadow-sm">
+                            <div className="flex items-center gap-3 w-full text-left mb-2">
+                                <div className="w-2 h-7 bg-[#db2777] rounded-full"></div>
+                                <h2 className="font-['Fredoka_One'] text-xl md:text-2xl text-[#1e1b4b]">ภาพรวมระบบ</h2>
                             </div>
-                            <div className="flex items-start gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-[#f5f3ff] text-[#8b5cf6] flex items-center justify-center flex-shrink-0">
-                                    <BanknotesIcon className="w-5 h-5" />
+                            <p className="text-[#64748b] text-xs mb-6 font-semibold">สถิติและข้อมูลภาพรวมของระบบธนาคารขยะ</p>
+
+                            <div className="flex flex-col gap-4">
+                                {/* บรรทัดที่ 1: สมาชิกทั้งหมด (โทนสีฟ้า) */}
+                                <div className="flex items-center gap-4 bg-[#eff6ff]/50 border border-[#dbeafe] p-3.5 rounded-2xl">
+                                    <div className="w-10 h-10 rounded-xl bg-[#3b82f6] text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                                        <UsersIcon className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-[#0f172a] text-sm mb-0.5">สมาชิกทั้งหมด</h3>
+                                        <p className="text-xs text-[#64748b] font-semibold">ในระบบมีจำนวน {mockMembers.length} คน</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="font-bold text-[#0f172a] text-sm mb-0.5">Total Balance</h3>
-                                    <p className="text-xs text-[#64748b] font-semibold">ยอดเงินฝากหมุนเวียนรวม 14,500 บาท</p>
+
+                                {/* บรรทัดที่ 2: ยอดเงินฝากรวม (โทนสีม่วง) */}
+                                <div className="flex items-center gap-4 bg-[#f5f3ff]/50 border border-[#ede9fe] p-3.5 rounded-2xl">
+                                    <div className="w-10 h-10 rounded-xl bg-[#8b5cf6] text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                                        <BanknotesIcon className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-[#0f172a] text-sm mb-0.5">ยอดเงินฝากรวม</h3>
+                                        <p className="text-xs text-[#64748b] font-semibold">หมุนเวียนรวม 14,500 บาท</p>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="flex items-start gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-[#ecfdf5] text-[#10b981] flex items-center justify-center flex-shrink-0">
-                                    <GlobeAsiaAustraliaIcon className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-[#0f172a] text-sm mb-0.5">Carbon Reduction</h3>
-                                    <p className="text-xs text-[#64748b] font-semibold">ลดการปล่อยก๊าซคาร์บอน 155.53 kgCO₂e</p>
+
+                                {/* บรรทัดที่ 3: ลดก๊าซคาร์บอน (โทนสีเขียวมิ้นต์) */}
+                                <div className="flex items-center gap-4 bg-[#ecfdf5]/50 border border-[#d1fae5] p-3.5 rounded-2xl">
+                                    <div className="w-10 h-10 rounded-xl bg-[#10b981] text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                                        <GlobeAsiaAustraliaIcon className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-[#0f172a] text-sm mb-0.5">ลดก๊าซคาร์บอน</h3>
+                                        <p className="text-xs text-[#64748b] font-semibold">ช่วยโลกลดไป 155.53 kgCO₂e</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* กล่องขวา: เมนูจัดการด่วน (Quick Actions / How to Use) */}
-                    <div className="bg-white rounded-2xl border border-[#e2e8f0] p-6 shadow-sm flex flex-col">
-                        <h2 className="font-bold text-[#0f172a] text-lg mb-1">Quick Actions</h2>
-                        <p className="text-[#64748b] text-xs mb-6 font-semibold">Three workflows — pick what fits your task</p>
-
-                        <div className="flex flex-col gap-3 flex-1 justify-between">
-                            {/* ปุ่ม 01: เพิ่มสมาชิก (กดแล้วเปิด Modal ได้เลย) */}
-                            <div onClick={() => openModal('add')} className="border border-[#e2e8f0] rounded-xl p-4 flex gap-4 cursor-pointer hover:border-[#3b82f6] hover:shadow-sm transition-all group">
-                                <div className="w-7 h-7 rounded bg-[#3b82f6] text-white flex items-center justify-center text-xs font-black shrink-0">01</div>
-                                <div>
-                                    <h3 className="font-bold text-[#0f172a] text-sm group-hover:text-[#3b82f6] transition-colors">Add New Member</h3>
-                                    <p className="text-xs text-[#64748b] mt-0.5 font-semibold">เพิ่มรายชื่อนักเรียนใหม่เข้าสู่ระบบธนาคารขยะ</p>
-                                </div>
+                        <div className="bg-white rounded-2xl border border-[#e2e8f0] p-6 shadow-sm flex flex-col">
+                            <div className="flex items-center gap-3 w-full text-left mb-2">
+                                <div className="w-2 h-7 bg-[#f59e0b] rounded-full"></div>
+                                <h2 className="font-['Fredoka_One'] text-xl md:text-2xl text-[#1e1b4b]">การจัดการด่วน</h2>
                             </div>
+                            <p className="text-[#64748b] text-xs mb-6 font-semibold">ทางลัดสำหรับฟังก์ชันที่ใช้งานบ่อย</p>
 
-                            {/* ปุ่ม 02: ส่งออกข้อมูล */}
-                            <div className="border border-[#e2e8f0] rounded-xl p-4 flex gap-4 cursor-pointer hover:border-[#8b5cf6] hover:shadow-sm transition-all group">
-                                <div className="w-7 h-7 rounded border-2 border-[#8b5cf6] text-[#8b5cf6] flex items-center justify-center text-xs font-black shrink-0">02</div>
-                                <div>
-                                    <h3 className="font-bold text-[#0f172a] text-sm group-hover:text-[#8b5cf6] transition-colors">Export Database</h3>
-                                    <p className="text-xs text-[#64748b] mt-0.5 font-semibold">ดาวน์โหลดข้อมูลสมาชิกเป็นไฟล์ Excel (.csv)</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
+                                <div onClick={() => openModal('add')} className="border border-[#e2e8f0] rounded-xl p-4 flex gap-3 cursor-pointer hover:border-[#3b82f6] hover:shadow-sm transition-all group items-center">
+                                    <div className="w-8 h-8 rounded-lg bg-[#eff6ff] text-[#3b82f6] flex items-center justify-center shrink-0 group-hover:bg-[#3b82f6] group-hover:text-white transition-colors"><PlusIcon className="w-5 h-5 stroke-2" /></div>
+                                    <div><h3 className="font-bold text-[#0f172a] text-xs">เพิ่มสมาชิกใหม่</h3><p className="text-[10px] text-[#64748b]">สร้างบัญชีนักเรียน</p></div>
                                 </div>
-                            </div>
-
-                            {/* ปุ่ม 03: ตั้งค่า */}
-                            <div className="border border-[#e2e8f0] rounded-xl p-4 flex gap-4 cursor-pointer hover:border-[#10b981] hover:shadow-sm transition-all group">
-                                <div className="w-7 h-7 rounded bg-[#10b981] text-white flex items-center justify-center text-xs font-black shrink-0">03</div>
-                                <div>
-                                    <h3 className="font-bold text-[#0f172a] text-sm group-hover:text-[#10b981] transition-colors">System Settings</h3>
-                                    <p className="text-xs text-[#64748b] mt-0.5 font-semibold">ตั้งค่าราคาขยะ รางวัล และระบบร้านค้า</p>
+                                <div onClick={() => openModal('deposit')} className="border border-[#e2e8f0] rounded-xl p-4 flex gap-3 cursor-pointer hover:border-[#10b981] hover:shadow-sm transition-all group items-center">
+                                    <div className="w-8 h-8 rounded-lg bg-[#ecfdf5] text-[#10b981] flex items-center justify-center shrink-0 group-hover:bg-[#10b981] group-hover:text-white transition-colors"><ScaleIcon className="w-5 h-5 stroke-2" /></div>
+                                    <div><h3 className="font-bold text-[#0f172a] text-xs">รับฝากขยะ</h3><p className="text-[10px] text-[#64748b]">ชั่งน้ำหนักและบันทึก</p></div>
+                                </div>
+                                <Link to="/system-config" className="border border-[#e2e8f0] rounded-xl p-4 flex gap-3 cursor-pointer hover:border-[#f59e0b] hover:shadow-sm transition-all group items-center">
+                                    <div className="w-8 h-8 rounded-lg bg-[#fffbeb] text-[#f59e0b] flex items-center justify-center shrink-0 group-hover:bg-[#f59e0b] group-hover:text-white transition-colors"><Cog8ToothIcon className="w-5 h-5 stroke-2" /></div>
+                                    <div><h3 className="font-bold text-[#0f172a] text-xs">ตั้งค่าระบบ</h3><p className="text-[10px] text-[#64748b]">ราคา / ระยะเวลา / รางวัล</p></div>
+                                </Link>
+                                <div onClick={handleExport} className="border border-[#e2e8f0] rounded-xl p-4 flex gap-3 cursor-pointer hover:border-[#8b5cf6] hover:shadow-sm transition-all group items-center">
+                                    <div className="w-8 h-8 rounded-lg bg-[#f5f3ff] text-[#8b5cf6] flex items-center justify-center shrink-0 group-hover:bg-[#8b5cf6] group-hover:text-white transition-colors"><ArrowDownTrayIcon className="w-5 h-5 stroke-2" /></div>
+                                    <div><h3 className="font-bold text-[#0f172a] text-xs">ส่งออกข้อมูล</h3><p className="text-[10px] text-[#64748b]">ดาวน์โหลด Excel</p></div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                {/* =================================================== */}
-                {/* 2. ส่วนล่าง: ตารางรายชื่อ (อ้างอิงสไตล์ Style Directory) */}
-                {/* =================================================== */}
-                <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-sm overflow-hidden flex flex-col">
+            <svg viewBox="0 0 1440 100" className="w-full h-[30px] md:h-[50px] block bg-white text-[#fafafa] -mt-1" preserveAspectRatio="none">
+                <path fill="currentColor" d="M0,32L48,42.7C96,53,192,75,288,74.7C384,75,480,53,576,48C672,43,768,53,864,64C960,75,1056,85,1152,74.7C1248,64,1344,32,1392,16L1440,0L1440,100L1392,100C1344,100,1248,100,1152,100C1056,100,960,100,864,100C768,100,672,100,576,100C480,100,384,100,288,100C192,100,96,100,48,100L0,100Z"></path>
+            </svg>
 
-                    {/* Header ของตาราง & ค้นหา */}
-                    <div className="p-5 border-b border-[#e2e8f0] flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div>
-                            <h2 className="font-bold text-[#0f172a] text-lg">Member Directory</h2>
-                            <p className="text-xs text-[#64748b] font-semibold mt-0.5">All available members — ready to manage</p>
+            {/* =================================================== */}
+            {/* ส่วนที่ 2: สีเทาอ่อน (ตาราง Directory) */}
+            {/* =================================================== */}
+            <div className="bg-[#fafafa] flex-1 pb-20 pt-4"> {/* ลด pt-10 เป็น pt-4 */}
+                <div className="max-w-6xl mx-auto px-4 md:px-8 fade-up" style={{ animationDelay: '0.2s' }}>
+                    <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-sm overflow-hidden flex flex-col">
+                        <div className="p-5 border-b border-[#e2e8f0] flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="flex items-center gap-3 w-full text-left mb-2">
+                                <div className="w-2 h-7 bg-[#27db4e] rounded-full"></div>
+                                <h2 className="font-bold text-[#0f172a] text-lg">รายชื่อสมาชิกในระบบ</h2>
+                                <p className="text-xs text-[#64748b] font-semibold mt-0.5">จัดการ ค้นหา และแก้ไขข้อมูลของสมาชิก</p>
+                            </div>
+                            <div className="relative w-full md:w-64">
+                                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8] font-bold" />
+                                <input type="text" placeholder="ค้นหาสมาชิก..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="w-full pl-9 pr-4 py-2 rounded-lg font-semibold outline-none text-[#0f172a] text-sm border border-[#e2e8f0] focus:border-[#cbd5e1] focus:ring-2 focus:ring-[#f1f5f9] transition-all bg-[#f8fafc]" />
+                            </div>
                         </div>
 
-                        <div className="relative w-full md:w-64">
-                            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8] font-bold" />
-                            <input
-                                type="text"
-                                placeholder="Search members..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-9 pr-4 py-2 rounded-lg font-semibold outline-none text-[#0f172a] text-sm border border-[#e2e8f0] focus:border-[#cbd5e1] focus:ring-2 focus:ring-[#f1f5f9] transition-all bg-[#f8fafc]"
-                            />
+                        <div className="hidden md:grid grid-cols-[2.5fr_1.5fr_1fr_1fr_1fr] px-6 py-3 border-b border-[#e2e8f0] bg-[#f8fafc]/50 text-[11px] font-black text-[#94a3b8] uppercase tracking-wider">
+                            <div>ชื่อ-นามสกุล</div><div>สถานะ / ชั้นเรียน</div><div>ยอดเงิน (บาท)</div><div>คาร์บอน (KG)</div><div className="text-right">จัดการ</div>
                         </div>
-                    </div>
 
-                    {/* ตารางแสดงผล (ในคอมพิวเตอร์เป็น Grid แบนๆ) */}
-                    <div className="hidden md:grid grid-cols-[2.5fr_1fr_1.5fr_1fr_1fr] px-6 py-3 border-b border-[#e2e8f0] bg-[#f8fafc]/50 text-[11px] font-black text-[#94a3b8] uppercase tracking-wider">
-                        <div>STUDENT NAME</div>
-                        <div>GRADE</div>
-                        <div>BALANCE (THB)</div>
-                        <div>CARBON (KG)</div>
-                        <div className="text-right">ACTION</div>
-                    </div>
+                        <div className="flex flex-col">
+                            {displayedMembers.length > 0 ? displayedMembers.map((member) => (
+                                <div key={member.id} className="flex items-center justify-between md:grid md:grid-cols-[2.5fr_1.5fr_1fr_1fr_1fr] px-4 md:px-5 py-3 md:py-4 border-b border-[#f1f5f9] hover:bg-[#f8fafc] transition-colors gap-3 md:gap-0">
 
-                    {/* รายชื่อสมาชิก */}
-                    <div className="flex flex-col">
-                        {filteredMembers.length > 0 ? filteredMembers.map((member) => (
-                            <div key={member.id} className="flex flex-col md:grid md:grid-cols-[2.5fr_1fr_1.5fr_1fr_1fr] md:items-center px-5 py-4 border-b border-[#f1f5f9] hover:bg-[#f8fafc] transition-colors gap-3 md:gap-0">
-
-                                {/* 1. รูป + ชื่อ */}
-                                <div className="flex items-center gap-3">
-                                    {/* รูป Avatar ขนาดเล็กกะทัดรัด */}
-                                    <div className="w-8 h-8 rounded-full bg-[#f1f5f9] flex items-center justify-center overflow-hidden border border-[#e2e8f0] shrink-0">
-                                        <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=User${member.id}`} alt="avatar" className="w-full h-full opacity-80" />
+                                    {/* ซ้าย: รูป + ชื่อ + ข้อมูล (Mobile & Desktop) */}
+                                    <div className="flex items-center gap-3 flex-1 overflow-hidden">
+                                        <div className={`w-9 h-9 md:w-8 md:h-8 rounded-full ${member.color} flex items-center justify-center text-white font-black text-xs shrink-0`}>
+                                            {member.fullName.split(' ')[1]?.[0] || 'U'}
+                                        </div>
+                                        <div className="flex flex-col overflow-hidden">
+                                            <span className="font-bold text-[#0f172a] text-sm truncate">{member.fullName}</span>
+                                            <span className="text-[10px] text-[#64748b] font-semibold md:hidden truncate">
+                                                ชั้น {member.grade} • ฿{member.balance}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div className="flex flex-col">
-                                        <span className="font-bold text-[#0f172a] text-sm">{member.fullName}</span>
-                                        <span className="text-[11px] text-[#64748b] font-semibold md:hidden">ชั้น {member.grade} • ยอดเงิน {member.balance} บ.</span>
+
+                                    {/* กลาง: ข้อมูลแสดงเฉพาะ Desktop */}
+                                    <div className="hidden md:flex flex-col items-start gap-1">
+                                        <span className="bg-[#f1f5f9] text-[#475569] px-2 py-0.5 rounded text-[10px] font-bold border border-[#e2e8f0]">{member.grade}</span>
+                                        <span className={`text-[10px] font-bold ${member.status === 'กำลังศึกษา' ? 'text-[#10b981]' : 'text-[#64748b]'}`}>{member.status}</span>
+                                    </div>
+                                    <div className="hidden md:flex font-mono text-[#8b5cf6] text-sm font-semibold">฿ {member.balance.toLocaleString()}</div>
+                                    <div className="hidden md:flex text-[#64748b] text-sm font-semibold">{member.carbonPoints} kg</div>
+
+                                    {/* ขวา: ปุ่ม Edit (ชิดขวาเสมอทั้ง Mobile และ Desktop) */}
+                                    <div className="flex justify-end shrink-0">
+                                        <button onClick={() => openModal('edit', member)} className="bg-[#fef2f2] text-[#ef4444] hover:bg-[#fee2e2] px-3 py-1.5 rounded-lg md:rounded-full text-xs font-bold flex items-center gap-1.5 transition-colors border border-[#fecaca]"
+                                        >
+                                            <PencilSquareIcon className="w-4 h-4 md:w-3.5 md:h-3.5" />
+                                            <span className="hidden sm:inline">แก้ไข</span>
+                                        </button>
                                     </div>
                                 </div>
+                            )) : (
+                                <div className="py-12 text-center text-[#64748b] text-sm font-semibold">ไม่พบข้อมูลที่ค้นหา</div>
+                            )}
+                        </div>
 
-                                {/* 2. ชั้นเรียน (Style Pill) */}
-                                <div className="hidden md:flex">
-                                    <span className="bg-[#f1f5f9] text-[#475569] px-2.5 py-1 rounded-md text-xs font-bold border border-[#e2e8f0]">
-                                        {member.grade}
-                                    </span>
-                                </div>
-
-                                {/* 3. ยอดเงิน (สีม่วงเหมือนฟอนต์ในรูป) */}
-                                <div className="hidden md:flex font-mono text-[#8b5cf6] text-sm font-semibold">
-                                    ฿ {member.balance.toLocaleString()}
-                                </div>
-
-                                {/* 4. คาร์บอน */}
-                                <div className="hidden md:flex text-[#64748b] text-sm font-semibold">
-                                    {member.carbonPoints} kg
-                                </div>
-
-                                {/* 5. ปุ่ม Action (เหมือนปุ่ม Status สีเขียวในรูป) */}
-                                <div className="flex md:justify-end">
-                                    <button
-                                        onClick={() => openModal('edit', member)}
-                                        className="bg-[#ecfdf5] text-[#10b981] hover:bg-[#d1fae5] px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-colors border border-[#a7f3d0]"
-                                    >
-                                        <PencilSquareIcon className="w-3.5 h-3.5" /> Edit
-                                    </button>
-                                </div>
-                            </div>
-                        )) : (
-                            <div className="py-12 text-center text-[#64748b] text-sm font-semibold">
-                                ไม่พบข้อมูลที่ค้นหา
-                            </div>
-                        )}
-                    </div>
-
-                    {/* ท้ายตาราง */}
-                    <div className="p-4 bg-[#f8fafc] border-t border-[#e2e8f0] flex justify-between items-center text-xs font-bold text-[#64748b]">
-                        <span>+ {mockMembers.length} total members</span>
-                        <span className="text-[#10b981] flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span> All Ready</span>
+                        <div className="p-4 bg-[#f8fafc] border-t border-[#e2e8f0] flex justify-between items-center text-xs font-bold text-[#64748b]">
+                            <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} className="flex items-center gap-1 hover:text-[#0f172a] disabled:opacity-40 transition-colors"><ChevronLeftIcon className="w-4 h-4 stroke-2" /> ย้อนกลับ</button>
+                            <span className="text-[#0f172a] bg-white border border-[#e2e8f0] px-3 py-1 rounded-md shadow-sm">หน้า {currentPage} จาก {totalPages || 1}</span>
+                            <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages || totalPages === 0} className="flex items-center gap-1 hover:text-[#0f172a] disabled:opacity-40 transition-colors">ถัดไป <ChevronRightIcon className="w-4 h-4 stroke-2" /></button>
+                        </div>
                     </div>
                 </div>
-
             </div>
 
             {/* ========================================= */}
-            {/* MODAL: เพิ่ม/แก้ไขสมาชิก (ปรับให้เรียบคลีนขึ้น) */}
+            {/* MODALS SECTION */}
             {/* ========================================= */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-                    <div className="absolute inset-0 bg-[#0f172a]/20 backdrop-blur-sm transition-opacity" onClick={closeModal}></div>
+                    <div className="absolute inset-0 bg-[#0f172a]/60 backdrop-blur-sm transition-opacity" onClick={closeModal}></div>
 
-                    <div className="relative w-full max-w-lg bg-white rounded-2xl p-6 md:p-8 flex flex-col shadow-2xl border border-[#e2e8f0] animate-modal-pop">
-                        <button onClick={closeModal} className="absolute top-4 right-4 p-2 text-[#94a3b8] hover:text-[#0f172a] transition-colors rounded-lg hover:bg-[#f1f5f9]">
-                            <XMarkIcon className="w-5 h-5 font-bold" />
-                        </button>
+                    {/* 1. Modal: เพิ่ม/แก้ไขสมาชิก (ปรับธีมสี Add=ฟ้า, Edit=แดง และแก้ปุ่มทับเมนมือถือ) */}
+                    {(modalMode === 'add' || modalMode === 'edit') && (
+                        <form
+                            onSubmit={handleSave}
+                            className="relative w-full max-w-[95%] md:max-w-2xl bg-white rounded-[24px] p-6 md:p-8 flex flex-col gap-6 shadow-[0_10px_40px_rgba(0,0,0,0.1)] animate-modal-pop max-h-[90vh] overflow-y-auto hide-scrollbar pb-24 md:pb-8"
+                        >
+                            {/* ปุ่มปิด (X) มุมขวาบน */}
+                            <button type="button" onClick={closeModal} className="absolute top-4 right-4 p-1.5 md:p-2 bg-gray-50 rounded-full hover:bg-red-50 hover:text-red-500 text-gray-400 transition-colors z-20">
+                                <XMarkIcon className="w-5 h-5 font-bold" />
+                            </button>
 
-                        <h2 className="font-bold text-xl text-[#0f172a] mb-1">
-                            {modalMode === 'add' ? 'Add New Member' : 'Edit Member Data'}
-                        </h2>
-                        <p className="font-semibold text-[#64748b] text-sm mb-6">
-                            {modalMode === 'add' ? 'Fill in the details below to create a new profile.' : `Updating details for ${formData.fullName}`}
-                        </p>
-
-                        <form onSubmit={handleSave} className="w-full flex flex-col gap-4">
-                            <div className="flex flex-col gap-1.5">
-                                <label className="font-bold text-xs text-[#475569]">FULL NAME</label>
-                                <input type="text" required value={formData.fullName || ''} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} className="w-full px-4 py-2.5 rounded-lg font-semibold outline-none text-[#0f172a] text-sm border border-[#e2e8f0] focus:border-[#3b82f6] focus:ring-2 focus:ring-[#eff6ff] transition-all" />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="flex flex-col gap-1.5">
-                                    <label className="font-bold text-xs text-[#475569]">NICKNAME</label>
-                                    <input type="text" required value={formData.nickname || ''} onChange={(e) => setFormData({ ...formData, nickname: e.target.value })} className="w-full px-4 py-2.5 rounded-lg font-semibold outline-none text-[#0f172a] text-sm border border-[#e2e8f0] focus:border-[#3b82f6] focus:ring-2 focus:ring-[#eff6ff] transition-all" />
-                                </div>
-                                <div className="flex flex-col gap-1.5">
-                                    <label className="font-bold text-xs text-[#475569]">GRADE</label>
-                                    <input type="text" required value={formData.grade || ''} onChange={(e) => setFormData({ ...formData, grade: e.target.value })} className="w-full px-4 py-2.5 rounded-lg font-semibold outline-none text-[#0f172a] text-sm border border-[#e2e8f0] focus:border-[#3b82f6] focus:ring-2 focus:ring-[#eff6ff] transition-all" />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="flex flex-col gap-1.5">
-                                    <label className="font-bold text-xs text-[#475569]">BALANCE (THB)</label>
-                                    <input type="number" value={formData.balance || ''} onChange={(e) => setFormData({ ...formData, balance: e.target.value })} className="w-full px-4 py-2.5 rounded-lg font-semibold outline-none text-[#0f172a] text-sm border border-[#e2e8f0] focus:border-[#3b82f6] focus:ring-2 focus:ring-[#eff6ff] transition-all" />
-                                </div>
-                                <div className="flex flex-col gap-1.5">
-                                    <label className="font-bold text-xs text-[#475569]">CARBON (KG)</label>
-                                    <input type="number" step="0.01" value={formData.carbonPoints || ''} onChange={(e) => setFormData({ ...formData, carbonPoints: e.target.value })} className="w-full px-4 py-2.5 rounded-lg font-semibold outline-none text-[#0f172a] text-sm border border-[#e2e8f0] focus:border-[#3b82f6] focus:ring-2 focus:ring-[#eff6ff] transition-all" />
-                                </div>
+                            {/* หัวข้อ Modal (เปลี่ยนสีตามโหมด: Add = ฟ้า, Edit = แดง) */}
+                            <div className="flex items-center gap-2 border-b border-gray-100 pb-4">
+                                {modalMode === 'add' ? (
+                                    <UserPlusIcon className="w-6 h-6 text-[#3b82f6] stroke-2" />
+                                ) : (
+                                    <PencilIcon className="w-6 h-6 text-[#ef4444] stroke-2" />
+                                )}
+                                <h2 className="font-['Fredoka_One'] text-xl text-[#1e1b4b]">
+                                    {modalMode === 'add' ? 'เพิ่มสมาชิกใหม่' : 'แก้ไขข้อมูลสมาชิก'}
+                                </h2>
                             </div>
 
-                            <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-[#f1f5f9]">
-                                <button type="button" onClick={closeModal} className="px-5 py-2.5 rounded-lg font-bold text-sm text-[#475569] hover:bg-[#f1f5f9] transition-colors">
-                                    Cancel
+                            {/* เนื้อหาหลักแบ่งเป็น 2 คอลัมน์ */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                                {/* --- คอลัมน์ 1: โปรไฟล์ & ข้อมูลพื้นฐาน --- */}
+                                <div className="flex flex-col gap-4">
+                                    {/* รูปโปรไฟล์ */}
+                                    <div className="w-full flex justify-center">
+                                        <div className={`relative group cursor-pointer w-24 h-24 md:w-28 md:h-28 rounded-full flex items-center justify-center overflow-hidden transition-transform hover:scale-105 shadow-[0_4px_15px_rgba(0,0,0,0.08)] border-[6px] border-white ${modalMode === 'add' ? 'bg-[#3b82f6]' : 'bg-[#ef4444]'}`}>
+                                            {formData.image ? (
+                                                <img src={formData.image} alt="Profile" className="w-full h-full object-cover mix-blend-overlay opacity-90" />
+                                            ) : (
+                                                <CameraIcon className="w-8 h-8 text-white opacity-80 group-hover:opacity-100 transition-opacity" />
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* ชื่อ-นามสกุล */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-[#64748b] mb-1">ชื่อ-นามสกุล</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            placeholder="เช่น ด.ช. สมชาย"
+                                            value={formData.fullName || ''}
+                                            onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                                            className={`w-full bg-[#f8fafc] border border-[#e2e8f0] px-4 py-2.5 rounded-xl text-sm font-bold text-[#0f172a] outline-none transition-colors ${modalMode === 'add' ? 'focus:border-[#3b82f6]' : 'focus:border-[#ef4444]'} focus:bg-white placeholder:text-gray-400`}
+                                        />
+                                    </div>
+
+                                    {/* ชั้นเรียน & ชื่อเล่น */}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs font-bold text-[#64748b] mb-1">ชั้นเรียน</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                placeholder="เช่น ป.4/1"
+                                                value={formData.grade || ''}
+                                                onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
+                                                className={`w-full bg-[#f8fafc] border border-[#e2e8f0] px-3 py-2.5 rounded-xl text-xs font-bold text-[#0f172a] text-center outline-none transition-colors ${modalMode === 'add' ? 'focus:border-[#3b82f6]' : 'focus:border-[#ef4444]'} focus:bg-white placeholder:text-gray-400`}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-[#64748b] mb-1">ชื่อเล่น</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                placeholder="ชื่อเล่น"
+                                                value={formData.nickname || ''}
+                                                onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
+                                                className={`w-full bg-[#f8fafc] border border-[#e2e8f0] px-3 py-2.5 rounded-xl text-xs font-bold text-[#0f172a] text-center outline-none transition-colors ${modalMode === 'add' ? 'focus:border-[#3b82f6]' : 'focus:border-[#ef4444]'} focus:bg-white placeholder:text-gray-400`}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* --- คอลัมน์ 2: ข้อมูลสถิติ & สถานะนักเรียน --- */}
+                                <div className="flex flex-col gap-4">
+                                    {/* ยอดเงินสะสม */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-[#64748b] mb-1">ยอดเงินสะสม (บาท)</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            onKeyDown={(e) => { if (e.key === '-' || e.key === 'e') e.preventDefault(); }}
+                                            required
+                                            value={formData.balance || ''}
+                                            onChange={(e) => setFormData({ ...formData, balance: e.target.value })}
+                                            className={`w-full bg-[#f8fafc] border border-[#e2e8f0] px-4 py-2.5 rounded-xl text-sm font-bold text-[#7c3aed] outline-none transition-colors ${modalMode === 'add' ? 'focus:border-[#3b82f6]' : 'focus:border-[#ef4444]'} focus:bg-white placeholder:text-gray-400`}
+                                            placeholder="0"
+                                        />
+                                    </div>
+
+                                    {/* ลดคาร์บอน */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-[#64748b] mb-1">ลดคาร์บอน (kgCO₂e)</label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            onKeyDown={(e) => { if (e.key === '-' || e.key === 'e') e.preventDefault(); }}
+                                            required
+                                            value={formData.carbonPoints || ''}
+                                            onChange={(e) => setFormData({ ...formData, carbonPoints: e.target.value })}
+                                            className={`w-full bg-[#f8fafc] border border-[#e2e8f0] px-4 py-2.5 rounded-xl text-sm font-bold text-[#10b981] outline-none transition-colors ${modalMode === 'add' ? 'focus:border-[#3b82f6]' : 'focus:border-[#ef4444]'} focus:bg-white placeholder:text-gray-400`}
+                                            placeholder="0.00"
+                                        />
+                                    </div>
+
+                                    {/* สถานะนักเรียน */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-[#64748b] mb-1">สถานะนักเรียน</label>
+                                        <select
+                                            value={formData.status || 'กำลังศึกษา'}
+                                            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                                            className={`w-full bg-[#f8fafc] border border-[#e2e8f0] text-[#0f172a] text-sm rounded-xl block px-4 py-2.5 font-bold outline-none cursor-pointer hover:border-[#cbd5e1] transition-colors ${modalMode === 'add' ? 'focus:ring-2 focus:ring-[#3b82f6]' : 'focus:ring-2 focus:ring-[#ef4444]'}`}
+                                        >
+                                            <option value="กำลังศึกษา">กำลังศึกษา (Active)</option>
+                                            <option value="จบการศึกษา">จบการศึกษา (Graduated)</option>
+                                            <option value="ย้ายโรงเรียน">ย้ายโรงเรียน / พ้นสภาพ</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            {/* --- ส่วนปุ่มด้านล่าง (ยกเลิก และ บันทึกข้อมูล) --- */}
+                            <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 mt-2">
+                                <button
+                                    type="button"
+                                    onClick={closeModal}
+                                    className="px-5 py-3 rounded-xl bg-gray-100 text-gray-700 font-bold text-sm hover:bg-gray-200 transition-colors"
+                                >
+                                    ยกเลิก
                                 </button>
-                                <button type="submit" className="px-6 py-2.5 rounded-lg font-bold text-sm bg-[#3b82f6] text-white hover:bg-[#2563eb] transition-colors shadow-sm">
-                                    Save Changes
+                                <button
+                                    type="submit"
+                                    className={`px-6 py-3 rounded-xl text-white font-bold text-sm active:scale-[0.98] transition-all ${modalMode === 'add'
+                                        ? 'bg-[#3b82f6] hover:bg-[#2563eb] shadow-[0_4px_12px_rgba(59,130,246,0.3)]'
+                                        : 'bg-[#ef4444] hover:bg-[#dc2626] shadow-[0_4px_12px_rgba(239,68,68,0.3)]'
+                                        }`}
+                                >
+                                    บันทึกข้อมูล (Save)
                                 </button>
                             </div>
                         </form>
-                    </div>
+                    )}
+
+
+                    {/* 2. Modal: รับฝากขยะ (ระบบตะกร้า Cart) */}
+                    {modalMode === 'deposit' && (
+                        <form onSubmit={(e) => { e.preventDefault(); alert(`ยืนยันการรับฝากสำเร็จ! รวมเงิน ${cartTotalMoney} บาท`); closeModal(); }} className="relative w-full max-w-4xl bg-white border border-[#f0f0f0] rounded-[24px] p-6 md:p-8 flex flex-col md:flex-row gap-8 shadow-[0_20px_40px_rgba(0,0,0,0.15)] animate-modal-pop max-h-[90vh]">
+                            <button type="button" onClick={closeModal} className="absolute top-4 right-4 p-2 bg-[#f8f9fa] rounded-full hover:bg-[#fee2e2] hover:text-red-500 text-[#6d6a8a] transition-colors z-10"><XMarkIcon className="w-5 h-5 font-bold" /></button>
+
+                            {/* ฝั่งซ้าย: ฟอร์มค้นหาและเพิ่มของลงตะกร้า */}
+                            <div className="w-full md:w-1/2 flex flex-col gap-5 overflow-y-auto hide-scrollbar pr-2">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <ScaleIcon className="w-6 h-6 text-[#10b981] stroke-2" />
+                                    <h2 className="font-['Fredoka_One'] text-xl text-[#1e1b4b]">รับฝากขยะ (ตะกร้า)</h2>
+                                </div>
+
+                                {/* ค้นหาชื่อสมาชิก (จำลองระบบ Debounce Search) */}
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="font-bold text-xs text-[#475569]">ค้นหาชื่อผู้ฝาก (พิมพ์เพื่อค้นหา)</label>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            placeholder="ตัวอย่าง: สมชาย"
+                                            value={depositMemberSearch}
+                                            onChange={(e) => {
+                                                setDepositMemberSearch(e.target.value);
+                                                setSelectedDepositMember(null);
+                                            }}
+                                            className="w-full bg-[#f8fafc] border border-[#e2e8f0] pl-4 pr-10 py-2.5 rounded-lg text-sm font-bold text-[#0f172a] outline-none focus:border-[#10b981]"
+                                        />
+                                        <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" />
+                                    </div>
+                                    {depositMemberSearch && !selectedDepositMember && (
+                                        <div className="bg-white border border-[#e2e8f0] rounded-lg mt-1 max-h-32 overflow-y-auto shadow-sm absolute z-20 w-[calc(50%-2rem)]">
+                                            {mockMembers.filter(m => m.fullName.includes(depositMemberSearch)).map(m => (
+                                                <div
+                                                    key={m.id}
+                                                    onClick={() => { setSelectedDepositMember(m); setDepositMemberSearch(`${m.fullName} (${m.grade})`); }}
+                                                    className="px-4 py-2 hover:bg-[#ecfdf5] cursor-pointer text-sm font-bold text-[#0f172a] border-b border-[#f1f5f9] last:border-0"
+                                                >
+                                                    {m.fullName} <span className="text-[#64748b] text-xs font-semibold">({m.grade})</span>
+                                                </div>
+                                            ))}
+                                            {mockMembers.filter(m => m.fullName.includes(depositMemberSearch)).length === 0 && (
+                                                <div className="px-4 py-3 text-xs text-[#94a3b8] text-center">ไม่พบชื่อที่ค้นหา</div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="font-bold text-xs text-[#475569]">หมวดหมู่ขยะ</label>
+                                        <select value={currentDepositItem.category} onChange={(e) => setCurrentDepositItem({ ...currentDepositItem, category: e.target.value, item: WASTE_CATEGORIES[e.target.value].items[0] })} className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-3 py-2.5 rounded-lg text-sm font-bold text-[#0f172a] outline-none focus:border-[#10b981] cursor-pointer">
+                                            {Object.entries(WASTE_CATEGORIES).map(([key, cat]) => <option key={key} value={key}>{cat.label}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="font-bold text-xs text-[#475569]">ประเภท</label>
+                                        <select value={currentDepositItem.item} onChange={(e) => setCurrentDepositItem({ ...currentDepositItem, item: e.target.value })} className="w-full bg-[#f8fafc] border border-[#e2e8f0] px-3 py-2.5 rounded-lg text-sm font-bold text-[#0f172a] outline-none focus:border-[#10b981] cursor-pointer">
+                                            {WASTE_CATEGORIES[currentDepositItem.category].items.map(item => <option key={item} value={item}>{item}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="font-bold text-xs text-[#475569]">น้ำหนัก (กิโลกรัม)</label>
+                                    <div className="relative">
+                                        <input type="number" step="0.01" min="0.01" placeholder="0.00" value={currentDepositItem.weight} onChange={(e) => setCurrentDepositItem({ ...currentDepositItem, weight: e.target.value })} className="w-full bg-white border border-[#e2e8f0] pl-4 pr-12 py-2.5 rounded-lg text-base font-black text-[#10b981] outline-none focus:border-[#10b981] focus:ring-2 focus:ring-[#ecfdf5]" />
+                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-[#64748b]">กก.</span>
+                                    </div>
+                                </div>
+
+                                <button type="button" onClick={handleAddToCart} disabled={!selectedDepositMember || !currentDepositItem.weight} className="w-full bg-[#f8fafc] text-[#3b82f6] border border-[#3b82f6] hover:bg-[#eff6ff] font-bold text-sm py-3 rounded-xl transition-all mt-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    + เพิ่มลงรายการ
+                                </button>
+                            </div>
+
+                            <div className="hidden md:block w-[1px] bg-[#f0f0f0]"></div>
+
+                            {/* ฝั่งขวา: รายการในตะกร้า & สรุปยอด */}
+                            <div className="w-full md:w-1/2 flex flex-col h-[400px] md:h-auto">
+                                <h3 className="font-bold text-[#0f172a] text-sm mb-3">รายการรับฝากปัจจุบัน</h3>
+
+                                {/* ลิสต์รายการตะกร้า (Scrollable) */}
+                                <div className="flex-1 overflow-y-auto bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3 flex flex-col gap-2 hide-scrollbar mb-4">
+                                    {depositCart.length === 0 ? (
+                                        <div className="text-center text-[#94a3b8] text-xs font-bold py-10 mt-auto mb-auto">ยังไม่มีรายการขยะในตะกร้า</div>
+                                    ) : (
+                                        depositCart.map(item => (
+                                            <div key={item.id} className="bg-white p-3 rounded-lg border border-[#e2e8f0] shadow-sm flex justify-between items-center group">
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-[#0f172a] text-sm">{item.item} <span className="text-[#64748b] text-xs font-semibold">({item.weight} กก.)</span></span>
+                                                    <span className="text-[10px] text-[#10b981] font-bold">ได้ {item.totalPrice.toFixed(2)} บ. | ลด {item.totalCarbon.toFixed(2)} kgCO₂e</span>
+                                                </div>
+                                                <button type="button" onClick={() => handleRemoveFromCart(item.id)} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"><TrashIcon className="w-4 h-4 stroke-2" /></button>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+
+                                {/* สรุปยอดเงินและคาร์บอน */}
+                                <div className="grid grid-cols-2 gap-3 mb-4 shrink-0">
+                                    <div className="flex flex-col items-center bg-white py-3 rounded-xl shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] border border-[#e2e8f0]">
+                                        <span className="text-[10px] font-bold text-[#64748b] mb-1">ยอดเงินรวม</span>
+                                        <span className="font-['Fredoka_One'] text-2xl text-[#10b981]">฿ {cartTotalMoney}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center bg-white py-3 rounded-xl shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] border border-[#e2e8f0]">
+                                        <span className="text-[10px] font-bold text-[#64748b] mb-1">คาร์บอนรวม</span>
+                                        <span className="font-['Fredoka_One'] text-xl text-[#3b82f6]">{cartTotalCarbon} <span className="text-[10px]">kg</span></span>
+                                    </div>
+                                </div>
+
+                                <button type="submit" disabled={depositCart.length === 0} className="w-full bg-[#10b981] text-white font-bold text-sm py-4 rounded-xl hover:bg-[#059669] active:scale-[0.98] transition-all shadow-[0_4px_10px_rgba(16,185,129,0.3)] shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    ยืนยันการรับฝาก
+                                </button>
+                            </div>
+                        </form>
+                    )}
+
                 </div>
             )}
         </div>

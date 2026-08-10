@@ -31,7 +31,7 @@ export default function Navbar() {
 
     const baseNavItems = [
         {
-            label: 'Home',
+            label: 'หน้าหลัก',
             url: '/',
             activeColor: 'text-[#7c3aed] after:bg-[#7c3aed] after:shadow-[0_2px_6px_rgba(124,58,237,0.3)]',
             hoverColor: 'text-[#6d6a8a] hover:text-[#7c3aed] after:bg-[#ddd6fe]'
