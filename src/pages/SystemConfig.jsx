@@ -1,23 +1,22 @@
 import { useState } from 'react';
 import { CurrencyDollarIcon, CalendarDaysIcon, GiftIcon, PlusIcon, TrashIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { WASTE_CATEGORIES, DEFAULT_PRICES } from '../utils/wasteConfig';
+import { useApp } from '../AppContext';
 
 export default function SystemConfig() {
-    const [pricingData, setPricingData] = useState(DEFAULT_PRICES);
-    const [durationData, setDurationData] = useState({ round1: 15, round2: 25 });
-    const [rewards, setRewards] = useState([
-        { id: 1, name: 'สมุดรีไซเคิล', points: 20, stock: 15 },
-        { id: 2, name: 'แก้วน้ำพกพา', points: 50, stock: 3 }
-    ]);
+    const { pricing, updatePricing, duration, updateDuration, rewards, updateRewards } = useApp();
+
+    const [pricingData, setPricingData] = useState(pricing);
+    const [durationData, setDurationData] = useState(duration);
 
     const handleSavePricing = (e) => {
         e.preventDefault();
-        alert('อัปเดตระบบ: บันทึกราคากลางขยะสำเร็จ! (รอการเชื่อม DB จริงเพื่ออัปเดตไปยังหน้า Home)');
+        updatePricing(pricingData);
     };
 
     const handleSaveDuration = (e) => {
         e.preventDefault();
-        alert(`อัปเดตระบบ: บันทึกระยะเวลา รอบที่ 1 (วันที่ ${durationData.round1}) และรอบที่ 2 (วันที่ ${durationData.round2}) สำเร็จ!`);
+        updateDuration(durationData);
     };
 
     const [isAddingReward, setIsAddingReward] = useState(false);
@@ -39,13 +38,12 @@ export default function SystemConfig() {
 
         setRewardErrors(errors);
 
-        // ถ้ามีช่องใดช่องหนึ่งว่างหรือผิดพลาด จะไม่ให้ผ่าน
         if (errors.name || errors.points || errors.stock) {
             return;
         }
 
         // บันทึกข้อมูลลงรายชื่อรางวัล
-        setRewards([
+        updateRewards([
             ...rewards,
             {
                 id: Date.now(),
@@ -68,7 +66,7 @@ export default function SystemConfig() {
 
     const handleDeleteReward = (idToRemove) => {
         if (window.confirm("คุณต้องการลบของรางวัลนี้ใช่หรือไม่?")) {
-            setRewards(rewards.filter(r => r.id !== idToRemove));
+            updateRewards(rewards.filter(r => r.id !== idToRemove));
         }
     };
 
@@ -309,7 +307,7 @@ export default function SystemConfig() {
                                                             type="number"
                                                             step="0.5"
                                                             required
-                                                            value={pricingData[item]}
+                                                            value={pricingData[item] ?? 0}
                                                             onChange={(e) => setPricingData({ ...pricingData, [item]: parseFloat(e.target.value) || 0 })}
                                                             className="w-12 font-bold text-right text-[#059669] text-sm bg-transparent outline-none"
                                                         />

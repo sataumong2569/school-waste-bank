@@ -1,10 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import {
     XMarkIcon, MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon,
-    BookOpenIcon, BeakerIcon, ArrowUpTrayIcon, UsersIcon
+    BookOpenIcon, BeakerIcon, ArrowUpTrayIcon, UsersIcon, GiftIcon
 } from '@heroicons/react/24/outline';
 
+
+import { useApp } from '../AppContext';
+
 export default function Members() {
+
+    const { members, duration, rewards } = useApp();
+
     const [selectedMember, setSelectedMember] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -12,66 +18,39 @@ export default function Members() {
 
     const membersSectionRef = useRef(null);
 
-    // =========================================
-    // 🟢 เตรียมพร้อมสำหรับเชื่อมต่อ Firebase Database & Cloudinary
-    // =========================================
-    // const [membersList, setMembersList] = useState([]);
-    // const [isLoading, setIsLoading] = useState(true);
-    // useEffect(() => {
-    //     const fetchMembers = async () => {
-    //         try {
-    //             const snapshot = await getDocs(collection(db, 'members'));
-    //             const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    //             setMembersList(data);
-    //         } catch (error) { console.error("Error fetching members:", error); }
-    //     };
-    //     fetchMembers();
-    // }, []);
-
-    // 🔴 ข้อมูลจำลอง (Mock-up) 
-    const membersList = Array.from({ length: 45 }, (_, i) => {
-        const mockNames = ['สมชาย รักดี', 'สมหญิง ใจบุญ', 'มานะ ขยันเรียน', 'ปิติ ยินดี', 'ชูใจ ไชโย'];
-        const mockNicknames = ['เอ', 'บี', 'ซี', 'ดี', 'อี'];
-        const nameIndex = i % 5;
-        return {
-            id: `uid_${i + 1}`,
-            fullName: `ด.ช. ${mockNames[nameIndex]} ${i + 1}`,
-            nickname: `น้อง${mockNicknames[nameIndex]}`,
-            grade: `ป.${Math.floor(Math.random() * 3) + 4}/${Math.floor(Math.random() * 3) + 1}`,
-            balance: Math.floor(Math.random() * 5000) + 500,
-            carbonPoints: (Math.random() * 50).toFixed(2),
-            color: ['bg-[#f472b6]', 'bg-[#f59e0b]', 'bg-[#34d399]', 'bg-[#7c3aed]', 'bg-[#38bdf8]'][nameIndex],
-            shadow: ['shadow-[0_8px_16px_rgba(244,114,182,0.3)]', 'shadow-[0_8px_16px_rgba(245,158,11,0.3)]', 'shadow-[0_8px_16px_rgba(52,211,153,0.3)]', 'shadow-[0_8px_16px_rgba(124,58,237,0.3)]', 'shadow-[0_8px_16px_rgba(56,189,248,0.3)]'][nameIndex],
-            image: `https://api.dicebear.com/7.x/notionists/svg?seed=User${i + 1}`,
-            history: [
-                { type: 'พลาสติกรวม', weight: (Math.random() * 5).toFixed(1), date: '2026-08-01' },
-                { type: 'กระดาษลัง', weight: (Math.random() * 10).toFixed(1), date: '2026-07-28' },
-                { type: 'กระป๋องอลูมิเนียม', weight: (Math.random() * 2).toFixed(1), date: '2026-07-15' },
-            ]
-        }
-    });
-
-    const filteredMembers = membersList.filter((member) =>
-        member.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        member.grade.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        member.nickname.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredMembers = members.filter((member) =>
+        member.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        member.grade?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        member.nickname?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
     const displayedMembers = filteredMembers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
+
     const today = new Date();
     const currentDay = today.getDate();
-    let progress15 = currentDay >= 15 ? 100 : (currentDay / 15) * 100;
-    let status15 = currentDay >= 15 ? (currentDay === 15 ? "วันนี้" : "รับฝากแล้ว") : `อีก ${15 - currentDay} วัน`;
-    let progress25 = currentDay >= 25 ? 100 : (currentDay / 25) * 100;
-    let status25 = currentDay >= 25 ? (currentDay === 25 ? "วันนี้" : "รับฝากแล้ว") : `อีก ${25 - currentDay} วัน`;
+    const round1 = Number(duration.round1) || 15;
+    const round2 = Number(duration.round2) || 25;
 
-    const top3Members = [
-        { id: 1, name: 'ด.ญ. รักษ์โลก เสมอมา', consistency: 24, carbon: '45.10', badge: '1st', color: 'bg-[#f59e0b]' },
-        { id: 2, name: 'ด.ช. เรียนดี ขยันยิ่ง', consistency: 22, carbon: '38.50', badge: '2nd', color: 'bg-[#94a3b8]' },
-        { id: 3, name: 'นาย ประหยัด อดออม', consistency: 19, carbon: '30.20', badge: '3rd', color: 'bg-[#fcd34d]' },
-    ];
+    let progress15 = currentDay >= round1 ? 100 : (currentDay / round1) * 100;
+    let status15 = currentDay >= round1 ? (currentDay === round1 ? "วันนี้" : "รับฝากแล้ว") : `อีก ${round1 - currentDay} วัน`;
+
+    let progress25 = currentDay >= round2 ? 100 : (currentDay / round2) * 100;
+    let status25 = currentDay >= round2 ? (currentDay === round2 ? "วันนี้" : "รับฝากแล้ว") : `อีก ${round2 - currentDay} วัน`;
+
+    // 🟢 5. คำนวณ Top 3 อัตโนมัติ (เรียงลำดับจากคนที่มีคาร์บอนสูงสุด)
+    const top3Members = [...members]
+        .sort((a, b) => parseFloat(b.carbonPoints || 0) - parseFloat(a.carbonPoints || 0))
+        .slice(0, 3) // เอาแค่ 3 อันดับแรก
+        .map((member, index) => ({
+            id: member.id,
+            name: member.fullName,
+            consistency: member.history ? member.history.length : Math.floor(Math.random() * 10) + 1, // จำลองครั้งที่ฝากไปก่อน (ถ้ามีระบบประวัติจริงจะใช้ history.length)
+            carbon: parseFloat(member.carbonPoints || 0).toFixed(2),
+            badge: index === 0 ? '1st' : index === 1 ? '2nd' : '3rd',
+            color: index === 0 ? 'bg-[#f59e0b]' : index === 1 ? 'bg-[#94a3b8]' : 'bg-[#fcd34d]'
+        }));
 
     useEffect(() => { setCurrentPage(1); }, [searchTerm]);
 
@@ -89,12 +68,9 @@ export default function Members() {
     };
 
     return (
-        // 🟢 เปลี่ยนคลาสครอบนอกสุด ลบสีพื้นหลังออก เพื่อให้ก้อนข้างในกำหนดสีเองได้เต็มจอ
         <div className="w-full overflow-hidden min-h-screen flex flex-col">
 
-            {/* ========================================= */}
-            {/* SECTION 1: HEADER & SEARCH (สีม่วงอ่อน กางเต็มจอ) */}
-            {/* ========================================= */}
+            {/* SECTION 1: HEADER & SEARCH */}
             <div className="w-full bg-[#f0eeff] pt-8 md:pt-12 pb-10 relative">
                 <div className="max-w-7xl mx-auto px-6 md:px-8 flex flex-col items-center text-center fade-up z-10 relative">
 
@@ -119,22 +95,19 @@ export default function Members() {
                     </div>
                 </div>
 
-                {/* 3D Decorator */}
                 <div className="absolute top-8 left-10 w-12 h-12 md:w-16 md:h-16 bg-[#38bdf8] rounded-full animate-float-3d shadow-[inset_-4px_-4px_10px_rgba(0,0,0,0.2),_0_10px_20px_rgba(56,189,248,0.4)] hidden md:block"></div>
                 <div className="absolute bottom-8 right-20 w-16 h-16 md:w-24 md:h-24 bg-[#f59e0b] rounded-[32px] animate-float-3d-reverse rotate-12 shadow-[inset_-4px_-4px_10px_rgba(0,0,0,0.2),_0_10px_20px_rgba(245,158,11,0.4)] hidden md:block"></div>
             </div>
 
-            {/* 🌊 เส้นคลื่นคั่นระหว่าง สีม่วงอ่อน (บน) และ สีมิ้นต์อ่อน (ล่าง) */}
             <svg viewBox="0 0 1440 100" className="w-full h-[30px] md:h-[60px] block bg-[#f0eeff] text-[#ecfdf5] -mt-1" preserveAspectRatio="none">
                 <path fill="currentColor" d="M0,32L48,42.7C96,53,192,75,288,74.7C384,75,480,53,576,48C672,43,768,53,864,64C960,75,1056,85,1152,74.7C1248,64,1344,32,1392,16L1440,0L1440,100L1392,100C1344,100,1248,100,1152,100C1056,100,960,100,864,100C768,100,672,100,576,100C480,100,384,100,288,100C192,100,96,100,48,100L0,100Z"></path>
             </svg>
 
-            {/* ========================================= */}
-            {/* SECTION 2: WIDGETS DASHBOARD (สีมิ้นต์อ่อน กางเต็มจอ) */}
-            {/* ========================================= */}
+            {/* SECTION 2: WIDGETS DASHBOARD */}
             <div className="w-full bg-[#ecfdf5] pt-4 pb-8">
                 <div className="max-w-7xl mx-auto flex flex-row md:grid md:grid-cols-3 gap-4 md:gap-6 overflow-x-auto snap-x snap-mandatory hide-scrollbar px-6 md:px-8 fade-up pb-4 md:pb-0" style={{ animationDelay: '0.2s' }}>
 
+                    {/* กล่องระยะเวลา */}
                     <div className="min-w-[85vw] md:min-w-0 snap-center clay-card-amber p-5 md:p-6 cursor-default">
                         <div className="text-center mb-5">
                             <h3 className="inline-block text-[13px] font-black bg-white/20 px-4 py-1.5 rounded-full text-white shadow-[inset_0_2px_4px_rgba(255,255,255,0.3)]">
@@ -143,7 +116,7 @@ export default function Members() {
                         </div>
                         <div className="mb-5">
                             <div className="flex justify-between items-end mb-2">
-                                <span className="font-bold text-sm text-white">รอบวันที่ 15</span>
+                                <span className="font-bold text-sm text-white">รอบวันที่ {round1}</span>
                                 <span className={`px-3 py-1 rounded-full text-[10px] font-black shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] ${progress15 === 100 ? 'bg-[#10b981] text-white' : 'bg-white/90 text-[#d97706]'}`}>{status15}</span>
                             </div>
                             <div className="w-full h-4 bg-black/10 rounded-full overflow-hidden shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]">
@@ -152,7 +125,7 @@ export default function Members() {
                         </div>
                         <div>
                             <div className="flex justify-between items-end mb-2">
-                                <span className="font-bold text-sm text-white">รอบวันที่ 25</span>
+                                <span className="font-bold text-sm text-white">รอบวันที่ {round2}</span>
                                 <span className={`px-3 py-1 rounded-full text-[10px] font-black shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] ${progress25 === 100 ? 'bg-[#10b981] text-white' : 'bg-white/90 text-[#d97706]'}`}>{status25}</span>
                             </div>
                             <div className="w-full h-4 bg-black/10 rounded-full overflow-hidden shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]">
@@ -161,6 +134,7 @@ export default function Members() {
                         </div>
                     </div>
 
+                    {/* กล่อง Top 3 */}
                     <div className="min-w-[85vw] md:min-w-0 snap-center clay-card p-5 md:p-6 cursor-default">
                         <div className="text-center mb-6">
                             <h3 className="inline-block text-[13px] font-black bg-[#f0eeff] px-4 py-1.5 rounded-full text-[#7c3aed]">
@@ -182,53 +156,45 @@ export default function Members() {
                         </div>
                     </div>
 
+                    {/* กล่องของรางวัล */}
                     <div className="min-w-[85vw] md:min-w-0 snap-center clay-card-purple p-5 md:p-6 cursor-default">
                         <div className="text-center mb-6">
                             <h3 className="inline-block text-[13px] font-black bg-white/20 px-4 py-1.5 rounded-full text-white shadow-[inset_0_2px_4px_rgba(255,255,255,0.3)]">
                                 แลกรางวัล (Item Shop)
                             </h3>
                         </div>
-                        <div className="flex flex-col gap-3">
-                            <div className="flex items-center justify-between px-4 py-3 bg-white/10 rounded-2xl shadow-[inset_0_2px_6px_rgba(0,0,0,0.1)]">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#7c3aed] shadow-sm"><BookOpenIcon className="w-5 h-5" /></div>
-                                    <div>
-                                        <p className="font-bold text-sm text-white leading-none mb-1.5">สมุดรีไซเคิล</p>
-                                        <p className="text-[10px] font-black text-white/70">เหลือ 15 ชิ้น</p>
+                        <div className="flex flex-col gap-3 max-h-[160px] overflow-y-auto hide-scrollbar">
+                            {/* 🟢 แมปรายการของรางวัลจาก Context แบบไดนามิก */}
+                            {rewards.length > 0 ? rewards.map((item) => (
+                                <div key={item.id} className="flex items-center justify-between px-4 py-3 bg-white/10 rounded-2xl shadow-[inset_0_2px_6px_rgba(0,0,0,0.1)]">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#7c3aed] shadow-sm">
+                                            <GiftIcon className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-sm text-white leading-none mb-1.5">{item.name}</p>
+                                            <p className="text-[10px] font-black text-white/70">เหลือ {item.stock} ชิ้น</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="block font-black text-xl text-white leading-none mb-0.5">{item.points}</span>
+                                        <span className="text-[10px] font-bold text-white/70">pts</span>
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <span className="block font-black text-xl text-white leading-none mb-0.5">20</span>
-                                    <span className="text-[10px] font-bold text-white/70">kgCO₂</span>
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between px-4 py-3 bg-white/10 rounded-2xl shadow-[inset_0_2px_6px_rgba(0,0,0,0.1)]">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#7c3aed] shadow-sm"><BeakerIcon className="w-5 h-5" /></div>
-                                    <div>
-                                        <p className="font-bold text-sm text-white leading-none mb-1.5">แก้วน้ำพกพา</p>
-                                        <p className="text-[10px] font-black text-white/70">เหลือ 3 ชิ้น</p>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <span className="block font-black text-xl text-white leading-none mb-0.5">50</span>
-                                    <span className="text-[10px] font-bold text-white/70">kgCO₂</span>
-                                </div>
-                            </div>
+                            )) : (
+                                <div className="text-center text-white/70 text-xs font-bold py-6">ยังไม่มีของรางวัลเปิดให้แลก</div>
+                            )}
                         </div>
                     </div>
 
                 </div>
             </div>
 
-            {/* 🌊 เส้นคลื่นคั่นระหว่าง สีมิ้นต์อ่อน (บน) และ สีพีชอ่อน (ล่าง) */}
             <svg viewBox="0 0 1440 100" className="w-full h-[30px] md:h-[60px] block bg-[#ecfdf5] text-[#fff7ed] -mt-1" preserveAspectRatio="none">
                 <path fill="currentColor" d="M0,64L60,74.7C120,85,240,107,360,101.3C480,96,600,64,720,58.7C840,53,960,75,1080,80C1200,85,1320,75,1380,69.3L1440,64L1440,100L1380,100C1320,100,1200,100,1080,100C960,100,840,100,720,100C600,100,480,100,360,100C240,100,120,100,60,100L0,100Z"></path>
             </svg>
 
-            {/* ========================================= */}
-            {/* SECTION 3: MEMBERS LIST / GRID (สีพีชอ่อน กางเต็มจอ) */}
-            {/* ========================================= */}
+            {/* SECTION 3: MEMBERS LIST / GRID */}
             <div ref={membersSectionRef} className="w-full bg-[#fff7ed] pt-6 pb-16 flex-1 scroll-mt-24">
                 <div className="max-w-7xl mx-auto px-4 md:px-8 fade-up" style={{ animationDelay: '0.4s' }}>
 
@@ -241,7 +207,7 @@ export default function Members() {
 
                         {displayedMembers.length > 0 ? (
                             <>
-                                {/* 📱 รูปแบบ LIST: แสดงเฉพาะในมือถือ (md:hidden) */}
+                                {/* 📱 รูปแบบ LIST: มือถือ */}
                                 <div className="flex flex-col gap-3 md:hidden">
                                     {displayedMembers.map((member) => (
                                         <div
@@ -250,8 +216,8 @@ export default function Members() {
                                             className="flex flex-col p-3 bg-[#fafafa] rounded-[20px] shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] active:bg-[#f0eeff] transition-all cursor-pointer"
                                         >
                                             <div className="flex items-center gap-4 mb-2">
-                                                <div className={`w-14 h-14 rounded-full flex items-center justify-center font-black text-xl text-white flex-shrink-0 clay-sphere ${member.color} overflow-hidden`}>
-                                                    <img src={member.image} alt={member.fullName} loading="lazy" className="w-full h-full object-cover mix-blend-overlay opacity-90" />
+                                                <div className={`w-14 h-14 rounded-full flex items-center justify-center font-black text-xl text-white flex-shrink-0 clay-sphere ${member.color || 'bg-[#3b82f6]'} overflow-hidden`}>
+                                                    {member.image ? <img src={member.image} alt={member.fullName} loading="lazy" className="w-full h-full object-cover mix-blend-overlay opacity-90" /> : member.fullName?.split(' ')[1]?.[0] || 'U'}
                                                 </div>
                                                 <div className="overflow-hidden">
                                                     <p className="font-bold text-[#1e1b4b] font-['Nunito'] text-sm truncate">{member.fullName}</p>
@@ -270,7 +236,7 @@ export default function Members() {
                                     ))}
                                 </div>
 
-                                {/* 💻 รูปแบบ GRID: แสดงเฉพาะในคอมพิวเตอร์ (hidden md:grid) */}
+                                {/* 💻 รูปแบบ GRID: คอมพิวเตอร์ */}
                                 <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-6">
                                     {displayedMembers.map((member) => (
                                         <div
@@ -278,8 +244,8 @@ export default function Members() {
                                             onClick={() => setSelectedMember(member)}
                                             className="bg-[#fafafa] border border-[#f0f0f0] rounded-[24px] p-5 flex flex-col items-center text-center cursor-pointer hover-bouncy group shadow-[0_4px_12px_rgba(0,0,0,0.02)]"
                                         >
-                                            <div className={`w-24 h-24 rounded-full mb-4 overflow-hidden clay-sphere ${member.color} ${member.shadow} transition-transform group-hover:scale-105 border-[4px] border-white`}>
-                                                <img src={member.image} alt={member.fullName} loading="lazy" className="w-full h-full object-cover mix-blend-overlay opacity-90" />
+                                            <div className={`w-24 h-24 rounded-full mb-4 overflow-hidden clay-sphere ${member.color || 'bg-[#3b82f6]'} ${member.shadow || ''} transition-transform group-hover:scale-105 border-[4px] border-white`}>
+                                                {member.image ? <img src={member.image} alt={member.fullName} loading="lazy" className="w-full h-full object-cover mix-blend-overlay opacity-90" /> : <span className="text-white text-3xl font-black mt-6 block">{member.fullName?.split(' ')[1]?.[0] || 'U'}</span>}
                                             </div>
                                             <p className="font-bold text-[#1e1b4b] font-['Nunito'] text-[15px] mb-1 truncate w-full">{member.fullName}</p>
                                             <p className="text-xs text-[#6d6a8a] font-bold bg-white border border-[#f0eeff] px-3 py-1 rounded-full shadow-sm mb-4">
@@ -335,9 +301,7 @@ export default function Members() {
                 </div>
             </div>
 
-            {/* ========================================= */}
             {/* CENTER POP-UP MODAL */}
-            {/* ========================================= */}
             {selectedMember && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
 
@@ -351,7 +315,7 @@ export default function Members() {
 
                         <div className="w-full md:w-1/3 flex flex-col items-center justify-center text-center">
                             <div className={`w-28 h-28 md:w-40 md:h-40 rounded-full mb-4 border-[6px] border-white shadow-[0_8px_16px_rgba(0,0,0,0.15),_inset_-4px_-6px_10px_rgba(0,0,0,0.2)] overflow-hidden ${selectedMember.color || 'bg-[#7c3aed]'}`}>
-                                <img src={selectedMember.image} alt="Profile" className="w-full h-full object-cover mix-blend-overlay opacity-90" />
+                                {selectedMember.image ? <img src={selectedMember.image} alt="Profile" className="w-full h-full object-cover mix-blend-overlay opacity-90" /> : <span className="text-white text-5xl font-black mt-10 block">{selectedMember.fullName?.split(' ')[1]?.[0] || 'U'}</span>}
                             </div>
                             <h2 className="font-['Fredoka_One'] text-3xl md:text-4xl text-[#1e1b4b] mb-1">{selectedMember.nickname}</h2>
                             <p className="font-['Nunito'] font-bold text-[#6d6a8a] mb-4 text-sm md:text-base">{selectedMember.fullName}</p>
@@ -385,15 +349,20 @@ export default function Members() {
                             </div>
 
                             <div className="flex flex-col gap-2 max-h-40 md:max-h-full overflow-y-auto hide-scrollbar pr-1 flex-1">
-                                {selectedMember.history.map((hist, idx) => (
-                                    <div key={idx} className="flex justify-between items-center bg-white px-4 py-3 rounded-xl shadow-sm">
-                                        <div className="flex flex-col">
-                                            <span className="font-bold text-[#1e1b4b] text-xs md:text-sm">{hist.type}</span>
-                                            <span className="text-[9px] md:text-[10px] text-[#6d6a8a] font-semibold">{hist.date}</span>
+                                {/* 🟢 ตรวจสอบประวัติการฝาก ป้องกันบั๊กกรณีเด็กใหม่ไม่มีประวัติ */}
+                                {selectedMember.history && selectedMember.history.length > 0 ? (
+                                    selectedMember.history.map((hist, idx) => (
+                                        <div key={idx} className="flex justify-between items-center bg-white px-4 py-3 rounded-xl shadow-sm">
+                                            <div className="flex flex-col">
+                                                <span className="font-bold text-[#1e1b4b] text-xs md:text-sm">{hist.type}</span>
+                                                <span className="text-[9px] md:text-[10px] text-[#6d6a8a] font-semibold">{hist.date}</span>
+                                            </div>
+                                            <span className="font-black text-[#10b981] text-sm md:text-lg">{hist.weight} <span className="text-[10px] md:text-xs font-['Nunito'] text-[#6d6a8a]">กก.</span></span>
                                         </div>
-                                        <span className="font-black text-[#10b981] text-sm md:text-lg">{hist.weight} <span className="text-[10px] md:text-xs font-['Nunito'] text-[#6d6a8a]">กก.</span></span>
-                                    </div>
-                                ))}
+                                    ))
+                                ) : (
+                                    <div className="text-center py-6 text-xs font-bold text-[#94a3b8]">ยังไม่มีประวัติการฝากขยะ</div>
+                                )}
                             </div>
                         </div>
 

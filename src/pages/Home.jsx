@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import {
     PlusIcon, QrCodeIcon, TrashIcon,
@@ -7,64 +7,142 @@ import {
 } from '@heroicons/react/24/outline'
 import ReceiptBill from '../components/ReceiptBill'
 
+import { useApp } from '../AppContext';
+import { WASTE_CATEGORIES } from '../utils/wasteConfig';
+
 export default function Home() {
     const [isLoading, setIsLoading] = useState(true);
+
+    const { members, pricing, sysStats, priceUpdatedAt } = useApp();
 
     useEffect(() => {
         const timer = setTimeout(() => {
             setIsLoading(false);
-        }, 1500);
+        }, 500);
         return () => clearTimeout(timer);
     }, []);
 
-    const membersList = [
-        { id: 1, name: 'ด.ช. สมชาย รักดี', grade: 'ป.4/1', points: 1250 },
-        { id: 2, name: 'ด.ญ. สมหญิง ใจบุญ', grade: 'ป.5/2', points: 980 },
-        { id: 3, name: 'ด.ช. มานะ ขยันเรียน', grade: 'ป.6/1', points: 840 },
-        { id: 4, name: 'ด.ญ. ปิติ ยินดี', grade: 'ป.3/3', points: 720 },
-        { id: 5, name: 'ด.ช. ชูใจ ไชโย', grade: 'ป.4/2', points: 650 },
-        { id: 6, name: 'ด.ญ. วีณา นารี', grade: 'ป.5/1', points: 500 },
-    ];
+    //  ระบบคำนวณสัดส่วนขยะ (กราฟวงกลมและกราฟแท่ง) โชว์ทุกรายการแม้เป็น 0
+    const dashboardData = useMemo(() => {
+        let totalWasteWeight = 0;
+        const categoryTotals = {};
+        const itemTotals = {};
 
+        // 1. สร้างค่าเริ่มต้นเป็น 0 ให้ "ทุกหมวดหมู่" และ "ขยะทุกชิ้น"
+        Object.entries(WASTE_CATEGORIES).forEach(([catKey, catVal]) => {
+            categoryTotals[catKey] = 0;
+            catVal.items.forEach(item => {
+                itemTotals[item] = 0; // สร้างรายการขยะเตรียมรอไว้เลย
+            });
+        });
+
+        // 2. เอาข้อมูลขยะมาบวกลงในหมวดหมู่
+        members.forEach(m => {
+            if (m.history && Array.isArray(m.history)) {
+                m.history.forEach(h => {
+                    const weight = parseFloat(h.weight) || 0;
+                    totalWasteWeight += weight;
+
+                    // ถ้าขยะชื่อนี้มีในระบบ ให้บวกน้ำหนักเพิ่มเข้าไป
+                    if (itemTotals[h.type] !== undefined) {
+                        itemTotals[h.type] += weight;
+                    }
+
+                    for (const [catKey, catVal] of Object.entries(WASTE_CATEGORIES)) {
+                        if (catVal.items.includes(h.type)) {
+                            categoryTotals[catKey] += weight;
+                            break;
+                        }
+                    }
+                });
+            }
+        });
+
+        // 3. หาหมวดหมู่ที่ถูกฝากเยอะที่สุด (ถ้าขยะเป็น 0 ให้ขึ้นว่า '-')
+        let topCategoryName = '-';
+        let maxCatWeight = 0;
+        for (const [catKey, weight] of Object.entries(categoryTotals)) {
+            if (weight > maxCatWeight) {
+                maxCatWeight = weight;
+                topCategoryName = WASTE_CATEGORIES[catKey].label;
+            }
+        }
+        if (maxCatWeight === 0) topCategoryName = '-';
+
+        // 4. สร้างข้อมูลกราฟวงกลม (โชว์ทุกอัน แม้จะเป็น 0%)
+        const pieData = [];
+        let cumulativePercent = 0;
+        let pieConicGradient = [];
+
+        const allCatKeys = Object.keys(categoryTotals);
+
+        if (totalWasteWeight === 0) {
+            // กรณีที่ยังไม่มีใครฝากขยะเลย (กราฟวงกลมสีเทา)
+            pieConicGradient.push(`#e2e8f0 0% 100%`);
+            allCatKeys.forEach(key => {
+                pieData.push({ label: WASTE_CATEGORIES[key].label, percent: 0, colorClass: WASTE_CATEGORIES[key].color });
+            });
+        } else {
+            // กรณีมีขยะแล้ว
+            allCatKeys.forEach(key => {
+                const percent = (categoryTotals[key] / totalWasteWeight) * 100;
+                const hexColor = WASTE_CATEGORIES[key].color.match(/#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})/)?.[0] || '#ccc';
+
+                pieData.push({ label: WASTE_CATEGORIES[key].label, percent: percent, colorClass: WASTE_CATEGORIES[key].color });
+
+                if (percent > 0) {
+                    pieConicGradient.push(`${hexColor} ${cumulativePercent}% ${cumulativePercent + percent}%`);
+                    cumulativePercent += percent;
+                }
+            });
+        }
+
+        // 5. สร้างข้อมูลกราฟแนวนอน (โชว์ขยะทุกชิ้น แม้เป็น 0 กก.)
+        const detailedWaste = Object.keys(itemTotals).map(itemName => {
+            let colorClass = 'bg-gray-400';
+            for (const catVal of Object.values(WASTE_CATEGORIES)) {
+                if (catVal.items.includes(itemName)) {
+                    colorClass = catVal.color;
+                    break;
+                }
+            }
+            return { name: itemName, value: itemTotals[itemName], color: colorClass };
+        }).sort((a, b) => b.value - a.value); // เรียงจากมากไปน้อย (พวก 0 กก. จะอยู่ล่างสุด)
+
+        return {
+            totalWasteWeight,
+            topCategoryName,
+            pieData,
+            pieGradientString: pieConicGradient.length > 0 ? `conic-gradient(${pieConicGradient.join(', ')})` : `conic-gradient(#e2e8f0 0% 100%)`,
+            detailedWaste
+        };
+    }, [members]);
+
+    const newestMembers = [...members].reverse().slice(0, 6);
+
+    // 🟢 ดึงตัวเลขจากบิลรวม (sysStats) มาใส่โดยตรง
     const stats = [
-        { title: 'ประเภทขยะมากที่สุด', value: 'พลาสติก', unit: '', icon: StarIcon, clayClass: 'clay-card-pink' },
-        { title: 'ขยะรวมทั้งหมด', value: '450', unit: 'กก.', icon: TrashIcon, clayClass: 'clay-card-amber' },
-        { title: 'ยอดเงินออมรวม', value: '400', unit: 'บาท', icon: BanknotesIcon, clayClass: 'clay-card-mint' },
-        { title: 'จำนวนสมาชิก', value: '170', unit: 'คน', icon: UsersIcon, clayClass: 'clay-card-sky' },
-        { title: 'ลดการปล่อยคาร์บอน', value: '155.53', unit: 'kgCO₂e', icon: GlobeAsiaAustraliaIcon, clayClass: 'clay-card-purple' },
+        { title: 'ประเภทขยะมากที่สุด', value: dashboardData.topCategoryName, unit: '', icon: StarIcon, clayClass: 'clay-card-pink' },
+        { title: 'ขยะรวมทั้งหมด', value: dashboardData.totalWasteWeight.toLocaleString(undefined, { maximumFractionDigits: 1 }), unit: 'กก.', icon: TrashIcon, clayClass: 'clay-card-amber' },
+        { title: 'ยอดเงินออมรวม', value: (sysStats?.totalBalance || 0).toLocaleString(), unit: 'บาท', icon: BanknotesIcon, clayClass: 'clay-card-mint' },
+        { title: 'จำนวนสมาชิก', value: (sysStats?.totalMembers || 0).toString(), unit: 'คน', icon: UsersIcon, clayClass: 'clay-card-sky' },
+        { title: 'ลดการปล่อยคาร์บอน', value: (sysStats?.totalCarbon || 0).toLocaleString(undefined, { maximumFractionDigits: 2 }), unit: 'kgCO₂e', icon: GlobeAsiaAustraliaIcon, clayClass: 'clay-card-purple' },
     ];
 
-    const detailedWaste = [
-        { name: 'พลาสติกรวม', value: 850, color: 'bg-[#f472b6]' },
-        { name: 'ขวดน้ำขุ่น', value: 420, color: 'bg-[#f59e0b]' },
-        { name: 'ขวดน้ำใส', value: 380, color: 'bg-[#34d399]' },
-        { name: 'ขวดน้ำ PET สี', value: 310, color: 'bg-[#7c3aed]' },
-        { name: 'LDPE', value: 290, color: 'bg-[#38bdf8]' },
-        { name: 'กระดาษขาวดำ', value: 650, color: 'bg-[#f472b6]' },
-        { name: 'กระดาษลัง', value: 890, color: 'bg-[#34d399]' },
-        { name: 'กระป๋องกาแฟ/นม', value: 220, color: 'bg-[#7c3aed]' },
-        { name: 'เหล็กหนา', value: 150, color: 'bg-[#38bdf8]' },
-        { name: 'สังกะสี', value: 90, color: 'bg-[#f59e0b]' },
-    ];
-
-    const maxWasteValue = Math.max(...detailedWaste.map(item => item.value));
+    const maxWasteValue = dashboardData.detailedWaste.length > 0 ? Math.max(...dashboardData.detailedWaste.map(item => item.value)) : 1;
 
     return (
         <div className="w-full overflow-hidden">
 
-            {/* ========================================= */}
-            {/* SECTION 1: พื้นหลังสีม่วงอ่อน กางเต็ม w-full */}
-            {/* ========================================= */}
+            {/* SECTION 1: HERO */}
             <div className="w-full bg-[#f0eeff] pt-8 md:pt-16 pb-16">
                 <div className="max-w-7xl mx-auto px-6 md:px-8">
 
-                    {/* Hero Section */}
                     <div className="flex flex-col md:flex-row items-center justify-between min-h-[50vh] mb-20 fade-up">
                         <div className="w-full md:w-1/2 flex flex-col items-start gap-6 z-10">
                             <div className="inline-flex items-center gap-2 bg-white/60 px-4 py-2 rounded-full shadow-[inset_0_2px_4px_rgba(255,255,255,1),_0_4px_10px_rgba(124,58,237,0.1)] backdrop-blur-sm">
                                 <span className="w-2.5 h-2.5 rounded-full bg-[#7c3aed] animate-pulse"></span>
-                                <span className="font-['Nunito'] font-black text-[#7c3aed] text-sm md:text-base tracking-wider uppercase pr-1">New Platform</span>
-                                <span className="font-['Nunito'] font-bold text-[#1e1b4b] text-sm md:text-base border-l-2 border-[#1e1b4b]/10 pl-3">ระบบธนาคารขยะยุคใหม่</span>
+                                <span className="font-['Nunito'] font-bold text-[#1e1b4b] text-sm md:text-base border-l-2 border-[#1e1b4b]/10 pl-3">โรงเรียนเทศบาลอุโมงค์ 1</span>
                             </div>
 
                             <h1 className="text-5xl md:text-7xl font-['Fredoka_One'] text-[#1e1b4b] leading-[1.1] tracking-wide">
@@ -111,7 +189,8 @@ export default function Home() {
                             ))
                         ) : (
                             stats.map((stat, index) => (
-                                <div key={index} className={`${stat.clayClass} p-5 md:p-6 flex flex-col fade-up hover-bouncy cursor-pointer`} style={{ animationDelay: `${0.2 + (index * 0.1)}s` }}>
+
+                                <div key={index} className={`${stat.clayClass} p-5 md:p-6 flex flex-col fade-up hover-bouncy cursor-pointer`} style={{ animationDelay: `${index * 0.03}s` }}>
                                     <div className="flex justify-between items-start mb-3">
                                         <div className="p-3 bg-white/20 rounded-[14px] shadow-[inset_0_2px_6px_rgba(255,255,255,0.4)]">
                                             <stat.icon className="w-7 h-7 text-white" />
@@ -129,11 +208,11 @@ export default function Home() {
 
                     {/* ข้อมูลสมาชิก & กราฟวงกลม */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div className="lg:col-span-2 fade-up" style={{ animationDelay: '0.6s' }}>
+                        <div className="lg:col-span-2 fade-up" style={{ animationDelay: '0.2s' }}>
                             <div className="clay-card p-6 md:p-8 relative h-full flex flex-col bg-white">
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className="w-2 h-7 bg-[#f59e0b] rounded-full"></div>
-                                    <h2 className="font-['Fredoka_One'] text-xl md:text-2xl text-[#1e1b4b]">สมาชิกยอดเยี่ยม (Top 6)</h2>
+                                    <h2 className="font-['Fredoka_One'] text-xl md:text-2xl text-[#1e1b4b]">สมาชิกใหม่ล่าสุด</h2>
                                 </div>
                                 <div className="flex flex-col gap-3 flex-1">
                                     {isLoading ? (
@@ -149,29 +228,33 @@ export default function Home() {
                                             </div>
                                         ))
                                     ) : (
-                                        membersList.map((member, index) => (
-                                            <div key={member.id} className="flex justify-between items-center p-4 bg-[#f8f9fa] rounded-2xl shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] hover:bg-[#f0eeff] transition-colors cursor-default">
-                                                <div className="flex items-center gap-4">
-                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm md:text-base ${index === 0 ? 'bg-[#f59e0b] text-white shadow-[0_4px_10px_rgba(245,158,11,0.3)]' : index === 1 ? 'bg-[#94a3b8] text-white' : index === 2 ? 'bg-[#fcd34d] text-[#92400e]' : 'bg-white shadow-sm text-[#6d6a8a]'}`}>
-                                                        {index === 0 ? <span className="text-[12px] tracking-tighter">1st</span> : index + 1}
+                                        newestMembers.length > 0 ? (
+                                            newestMembers.map((member, index) => (
+                                                <div key={member.id} className="flex justify-between items-center p-4 bg-[#f8f9fa] rounded-2xl shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] hover:bg-[#f0eeff] transition-colors cursor-default">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm md:text-base text-white ${member.color || 'bg-[#3b82f6]'}`}>
+                                                            {index + 1}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-bold text-[#1e1b4b] font-['Nunito'] text-sm md:text-base">{member.fullName}</p>
+                                                            <p className="text-xs md:text-sm text-[#6d6a8a] font-semibold">ชั้น {member.grade}</p>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <p className="font-bold text-[#1e1b4b] font-['Nunito'] text-sm md:text-base">{member.name}</p>
-                                                        <p className="text-xs md:text-sm text-[#6d6a8a] font-semibold">ชั้น {member.grade}</p>
+                                                    <div className="text-right flex flex-col items-end">
+                                                        <p className="font-['Fredoka_One'] text-[#7c3aed] text-xl">{member.balance}</p>
+                                                        <span className="text-[10px] md:text-xs font-bold text-[#6d6a8a] bg-white px-2 py-0.5 rounded-full shadow-sm mt-1">บาท</span>
                                                     </div>
                                                 </div>
-                                                <div className="text-right flex flex-col items-end">
-                                                    <p className="font-['Fredoka_One'] text-[#7c3aed] text-xl">{member.points}</p>
-                                                    <span className="text-[10px] md:text-xs font-bold text-[#6d6a8a] bg-white px-2 py-0.5 rounded-full shadow-sm mt-1">แต้ม</span>
-                                                </div>
-                                            </div>
-                                        ))
+                                            ))
+                                        ) : (
+                                            <div className="py-8 text-center text-[#94a3b8] font-bold text-sm">ยังไม่มีสมาชิกในระบบ</div>
+                                        )
                                     )}
                                 </div>
                             </div>
                         </div>
 
-                        <div className="lg:col-span-1 fade-up" style={{ animationDelay: '0.7s' }}>
+                        <div className="lg:col-span-1 fade-up" style={{ animationDelay: '0.3s' }}>
                             <div className="clay-card p-6 md:p-8 relative h-full flex flex-col items-center justify-start bg-white">
                                 <div className="flex items-center gap-3 w-full text-left mb-5">
                                     <div className="w-2 h-7 bg-[#db2777] rounded-full"></div>
@@ -182,8 +265,11 @@ export default function Home() {
                                         <div className="absolute inset-[26px] md:inset-[30px] bg-white rounded-full"></div>
                                     </div>
                                 ) : (
-                                    <div className="w-56 h-56 md:w-64 md:h-64 rounded-full clay-pie mb-6 relative flex-shrink-0" style={{ background: `conic-gradient(#db2777 0% 30%, #f59e0b 30% 55%, #10b981 55% 75%, #7c3aed 75% 85%, #0ea5e9 85% 95%, #94a3b8 95% 100%)` }}>
-                                        <div className="absolute inset-[26px] md:inset-[30px] bg-white rounded-full shadow-[inset_0_6px_12px_rgba(0,0,0,0.1)]"></div>
+                                    <div className="w-56 h-56 md:w-64 md:h-64 rounded-full clay-pie mb-6 relative flex-shrink-0" style={{ background: dashboardData.pieGradientString }}>
+                                        <div className="absolute inset-[26px] md:inset-[30px] bg-white rounded-full shadow-[inset_0_6px_12px_rgba(0,0,0,0.1)] flex items-center justify-center flex-col">
+                                            <span className="font-['Fredoka_One'] text-2xl text-[#1e1b4b]">{dashboardData.totalWasteWeight}</span>
+                                            <span className="text-[10px] font-bold text-[#64748b]">กก.</span>
+                                        </div>
                                     </div>
                                 )}
                                 <div className="w-full flex flex-col gap-2 font-['Nunito'] font-bold text-sm md:text-base text-[#1e1b4b]">
@@ -195,13 +281,22 @@ export default function Home() {
                                             </div>
                                         ))
                                     ) : (
-                                        <>
-                                            <div className="flex justify-between items-center px-3 py-1.5 rounded-xl hover:bg-[#f0eeff] transition-colors"><div className="flex items-center gap-3"><span className="w-4 h-4 bg-[#db2777] rounded-full shadow-inner"></span>พลาสติก</div><span className="font-['Fredoka_One'] text-lg">30%</span></div>
-                                            <div className="h-[2px] bg-[#f0eeff] mx-2 rounded-full"></div>
-                                            <div className="flex justify-between items-center px-3 py-1.5 rounded-xl hover:bg-[#f0eeff] transition-colors"><div className="flex items-center gap-3"><span className="w-4 h-4 bg-[#f59e0b] rounded-full shadow-inner"></span>กระดาษ</div><span className="font-['Fredoka_One'] text-lg">25%</span></div>
-                                            <div className="h-[2px] bg-[#f0eeff] mx-2 rounded-full"></div>
-                                            <div className="flex justify-between items-center px-3 py-1.5 rounded-xl hover:bg-[#f0eeff] transition-colors"><div className="flex items-center gap-3"><span className="w-4 h-4 bg-[#10b981] rounded-full shadow-inner"></span>แก้ว</div><span className="font-['Fredoka_One'] text-lg">20%</span></div>
-                                        </>
+                                        dashboardData.pieData.length > 0 ? (
+                                            dashboardData.pieData.map((data, idx) => (
+                                                <div key={idx}>
+                                                    <div className="flex justify-between items-center px-3 py-1.5 rounded-xl hover:bg-[#f0eeff] transition-colors">
+                                                        <div className="flex items-center gap-3">
+                                                            <span className={`w-4 h-4 ${data.colorClass} rounded-full shadow-inner`}></span>
+                                                            {data.label}
+                                                        </div>
+                                                        <span className="font-['Fredoka_One'] text-lg">{data.percent.toFixed(1)}%</span>
+                                                    </div>
+                                                    {idx !== dashboardData.pieData.length - 1 && <div className="h-[2px] bg-[#f0eeff] mx-2 rounded-full"></div>}
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="text-center text-[#94a3b8] text-xs py-4">ยังไม่มีข้อมูลสัดส่วนขยะ</div>
+                                        )
                                     )}
                                 </div>
                             </div>
@@ -210,39 +305,52 @@ export default function Home() {
                 </div>
             </div>
 
-            {/* 🌊 SVG Wave Divider 1 */}
             <svg viewBox="0 0 1440 100" className="w-full h-[60px] md:h-[100px] block bg-[#f0eeff] text-[#ecfdf5] -mt-1" preserveAspectRatio="none">
                 <path fill="currentColor" d="M0,32L48,42.7C96,53,192,75,288,74.7C384,75,480,53,576,48C672,43,768,53,864,64C960,75,1056,85,1152,74.7C1248,64,1344,32,1392,16L1440,0L1440,100L1392,100C1344,100,1248,100,1152,100C1056,100,960,100,864,100C768,100,672,100,576,100C480,100,384,100,288,100C192,100,96,100,48,100L0,100Z"></path>
             </svg>
 
-            {/* ========================================= */}
-            {/* SECTION 2: พื้นหลังสีมิ้นต์อ่อน กางเต็ม w-full */}
-            {/* ========================================= */}
+            {/* SECTION 2: บิลรับซื้อขยะ */}
             <div className="w-full bg-[#ecfdf5] pt-10 pb-16">
-                <div className="max-w-7xl mx-auto px-6 md:px-8 fade-up" style={{ animationDelay: '0.4s' }}>
+                <div className="max-w-7xl mx-auto px-6 md:px-8 fade-up" style={{ animationDelay: '0.2s' }}>
                     <div className="flex flex-col items-center mb-10">
                         <span className="clay-pill bg-white text-[#047857] px-4 py-1.5 rounded-full font-bold text-sm mb-3 shadow-[0_2px_8px_rgba(16,185,129,0.15)] border border-[#10b981]/10">อัปเดตล่าสุด</span>
                         <h2 className="font-black text-3xl md:text-4xl text-[#1e1b4b] text-center tracking-wide">รายการรับซื้อ</h2>
+                        <p className="text-[#64748b] text-xs md:text-sm font-bold mt-3 bg-white/60 px-4 py-1.5 rounded-full shadow-[inset_0_1px_3px_rgba(0,0,0,0.05)] border border-[#e2e8f0]">
+                            (อัปเดตเมื่อ: {priceUpdatedAt
+                                ? `${priceUpdatedAt.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })} เวลา ${priceUpdatedAt.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.`
+                                : 'ระบบเริ่มต้น'})
+                        </p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
-                        <ReceiptBill category="PL" shopName="SchoolWaste" date="23/07/26" items={[{ name: "พลาสติกรวม", price: "5.00" }, { name: "ขวดน้ำขุ่น", price: "10.00" }, { name: "ขวดน้ำใส", price: "8.50" }, { name: "ขวดน้ำ PET สี", price: "4.00" }]} />
-                        <ReceiptBill category="P" shopName="SchoolWaste" date="23/07/26" items={[{ name: "กระดาษขาวดำ", price: "5.00" }, { name: "กระดาษสีรวม", price: "1.00" }, { name: "กระดาษลัง", price: "5.50" }]} />
-                        <ReceiptBill category="ETC" shopName="SchoolWaste" date="23/07/26" items={[{ name: "กระป๋องกาแฟ/นม", price: "5.00" }, { name: "เหล็กหนา", price: "1.00" }, { name: "เหล็กบาง", price: "5.50" }, { name: "สังกะสี", price: "5.50" }]} />
+                        <ReceiptBill category="PL" shopName="SchoolWaste" date="ล่าสุด" items={[
+                            { name: "พลาสติกรวม", price: pricing["พลาสติกรวม"]?.toFixed(2) || "0.00" },
+                            { name: "ขวดน้ำขุ่น", price: pricing["ขวดน้ำขุ่น"]?.toFixed(2) || "0.00" },
+                            { name: "ขวดน้ำใส", price: pricing["ขวดน้ำใส"]?.toFixed(2) || "0.00" },
+                            { name: "ขวดน้ำ PET สี", price: pricing["ขวดน้ำ PET สี"]?.toFixed(2) || "0.00" }
+                        ]} />
+                        <ReceiptBill category="P" shopName="SchoolWaste" date="ล่าสุด" items={[
+                            { name: "กระดาษขาวดำ", price: pricing["กระดาษขาวดำ"]?.toFixed(2) || "0.00" },
+                            { name: "กระดาษสีรวม", price: pricing["กระดาษสีรวม"]?.toFixed(2) || "0.00" },
+                            { name: "กระดาษลัง", price: pricing["กระดาษลัง"]?.toFixed(2) || "0.00" }
+                        ]} />
+                        <ReceiptBill category="ETC" shopName="SchoolWaste" date="ล่าสุด" items={[
+                            { name: "กระป๋องกาแฟ/นม", price: pricing["กระป๋องกาแฟ/นม"]?.toFixed(2) || "0.00" },
+                            { name: "เหล็กหนา", price: pricing["เหล็กหนา"]?.toFixed(2) || "0.00" },
+                            { name: "เหล็กบาง", price: pricing["เหล็กบาง"]?.toFixed(2) || "0.00" },
+                            { name: "สังกะสี", price: pricing["สังกะสี"]?.toFixed(2) || "0.00" }
+                        ]} />
                     </div>
                 </div>
             </div>
 
-            {/* 🌊 SVG Wave Divider 2 */}
             <svg viewBox="0 0 1440 100" className="w-full h-[60px] md:h-[100px] block bg-[#ecfdf5] text-[#fff7ed] -mt-1" preserveAspectRatio="none">
                 <path fill="currentColor" d="M0,64L60,74.7C120,85,240,107,360,101.3C480,96,600,64,720,58.7C840,53,960,75,1080,80C1200,85,1320,75,1380,69.3L1440,64L1440,100L1380,100C1320,100,1200,100,1080,100C960,100,840,100,720,100C600,100,480,100,360,100C240,100,120,100,60,100L0,100Z"></path>
             </svg>
 
-            {/* ========================================= */}
-            {/* SECTION 3: พื้นหลังสีพีชอ่อน กางเต็ม w-full */}
-            {/* ========================================= */}
+            {/* SECTION 3: กราฟแท่ง */}
             <div className="w-full bg-[#fff7ed] pt-10 pb-24">
-                <div className="max-w-7xl mx-auto px-6 md:px-8 fade-up" style={{ animationDelay: '0.6s' }}>
+                <div className="max-w-7xl mx-auto px-6 md:px-8 fade-up" style={{ animationDelay: '0.3s' }}>
                     <div className="clay-card p-8 md:p-12 w-full bg-white shadow-xl shadow-purple-900/5">
                         <div className="flex flex-col items-center mb-10">
                             <h2 className="font-['Fredoka_One'] text-2xl md:text-3xl text-[#1e1b4b]">รายละเอียดขยะทุกประเภท</h2>
@@ -250,23 +358,25 @@ export default function Home() {
                         </div>
 
                         <div className="flex flex-col gap-4">
-                            {detailedWaste.map((item, index) => (
+                            {dashboardData.detailedWaste.length > 0 ? dashboardData.detailedWaste.map((item, index) => (
                                 <div key={index} className="flex items-center gap-3 md:gap-5 hover:bg-[#f8fafc] p-3 rounded-2xl transition-colors cursor-default">
                                     <div className="w-1/3 md:w-1/4 text-right font-['Nunito'] font-bold text-sm md:text-base text-[#1e1b4b] truncate">
                                         {item.name}
                                     </div>
                                     <div className="flex-1 h-6 md:h-8 bg-[#f1f5f9] rounded-full overflow-hidden shadow-[inset_0_3px_8px_rgba(0,0,0,0.06)]">
                                         <div
-                                            className={`h-full ${item.color} clay-bar transition-all duration-[2s] ease-out`}
-                                            style={{ width: '0%', animation: `fillBar 2s cubic-bezier(0.34, 1.56, 0.64, 1) 1s forwards` }}
+                                            className={`h-full ${item.color} clay-bar transition-all duration-1000 ease-out`}
+                                            style={{ width: '0%', animation: `fillBar${index} 1s cubic-bezier(0.34, 1.56, 0.64, 1) ${0.1 + (index * 0.05)}s forwards` }} // ⚡ ปรับกราฟแท่งให้วิ่งไวขึ้น
                                         ></div>
                                     </div>
-                                    <style>{`@keyframes fillBar { to { width: ${(item.value / maxWasteValue) * 100}%; } }`}</style>
+                                    <style>{`@keyframes fillBar${index} { to { width: ${(item.value / maxWasteValue) * 100}%; } }`}</style>
                                     <div className="w-16 md:w-24 font-['Fredoka_One'] text-[#1e1b4b] text-right text-base md:text-lg">
-                                        {item.value} <span className="text-xs md:text-sm font-['Nunito'] text-[#6d6a8a]">กก.</span>
+                                        {item.value.toLocaleString(undefined, { maximumFractionDigits: 1 })} <span className="text-xs md:text-sm font-['Nunito'] text-[#6d6a8a]">กก.</span>
                                     </div>
                                 </div>
-                            ))}
+                            )) : (
+                                <div className="text-center text-[#94a3b8] font-bold text-sm py-10">ยังไม่มีข้อมูลขยะในระบบ</div>
+                            )}
                         </div>
                     </div>
                 </div>
