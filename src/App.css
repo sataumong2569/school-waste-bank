@@ -132,7 +132,7 @@
   }
 }
 
-/* เปลี่ยนโครงสร้างส่วนเนื้อหาให้เป็นการ์ดดินปั้น (Clay Cards) */
+/* เปลี่ยนโครงสร้างส่วนเนื้อหาให้เป็นการ์ด (Clay Cards) */
 #next-steps {
   display: flex;
   gap: 24px;
@@ -488,7 +488,6 @@
 }
 
 .animate-modal-pop {
-  /* ใช้ cubic-bezier ให้เด้งดึ๋งๆ สไตล์ Clay */
   animation: modalPopIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 

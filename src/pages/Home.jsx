@@ -162,7 +162,7 @@ export default function Home() {
                             </Link>
                         </div>
 
-                        <div className="w-full md:w-1/2 flex justify-center mt-16 md:mt-0 relative perspective-[1000px]">
+                        <div className="hidden md:flex w-full md:w-1/2 justify-center mt-16 md:mt-0 relative perspective-[1000px]">
                             <div className="absolute right-10 -top-10 w-32 h-32 bg-[#f59e0b] rounded-full animate-float-3d-reverse flex items-center justify-center shadow-[10px_15px_0px_#d97706,_inset_0_-8px_16px_rgba(0,0,0,0.2),_inset_0_8px_16px_rgba(255,255,255,0.5)] z-20">
                                 <span className="text-5xl font-['Fredoka_One'] text-white drop-shadow-md">฿</span>
                             </div>
@@ -305,7 +305,7 @@ export default function Home() {
                 </div>
             </div>
 
-            <svg viewBox="0 0 1440 100" className="w-full h-[60px] md:h-[100px] block bg-[#f0eeff] text-[#ecfdf5] -mt-1" preserveAspectRatio="none">
+            <svg viewBox="0 0 1440 100" className="w-full h-[60px] md:h-[100px] block scale-[1.02] -mt-[2px] bg-[#f0eeff] text-[#ecfdf5] -mt-1" preserveAspectRatio="none">
                 <path fill="currentColor" d="M0,32L48,42.7C96,53,192,75,288,74.7C384,75,480,53,576,48C672,43,768,53,864,64C960,75,1056,85,1152,74.7C1248,64,1344,32,1392,16L1440,0L1440,100L1392,100C1344,100,1248,100,1152,100C1056,100,960,100,864,100C768,100,672,100,576,100C480,100,384,100,288,100C192,100,96,100,48,100L0,100Z"></path>
             </svg>
 
@@ -344,7 +344,7 @@ export default function Home() {
                 </div>
             </div>
 
-            <svg viewBox="0 0 1440 100" className="w-full h-[60px] md:h-[100px] block bg-[#ecfdf5] text-[#fff7ed] -mt-1" preserveAspectRatio="none">
+            <svg viewBox="0 0 1440 100" className="w-full h-[60px] md:h-[100px] block scale-[1.02] -mt-[2px] bg-[#ecfdf5] text-[#fff7ed] -mt-1" preserveAspectRatio="none">
                 <path fill="currentColor" d="M0,64L60,74.7C120,85,240,107,360,101.3C480,96,600,64,720,58.7C840,53,960,75,1080,80C1200,85,1320,75,1380,69.3L1440,64L1440,100L1380,100C1320,100,1200,100,1080,100C960,100,840,100,720,100C600,100,480,100,360,100C240,100,120,100,60,100L0,100Z"></path>
             </svg>
 

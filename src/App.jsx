@@ -11,11 +11,13 @@ import Members from './pages/Members';
 import Login from './pages/Login';
 import Settings from './pages/Settings';
 import SystemConfig from './pages/SystemConfig';
+import ScrollToTop from './components/ScrollToTop';
 
 
 function App() {
   return (
     <div className="min-h-screen bg-white font-['Nunito'] flex flex-col">
+      <ScrollToTop />
       <Navbar />
 
       <main className="w-full flex-1">

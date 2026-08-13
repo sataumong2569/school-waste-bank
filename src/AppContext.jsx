@@ -274,8 +274,97 @@ export const AppProvider = ({ children }) => {
             rewards, updateRewards
         }}>
             {isAppLoading ? (
-                <div className="w-full h-screen flex items-center justify-center bg-[#f8fafc]">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#7c3aed]"></div>
+
+                <div className="w-full overflow-hidden bg-[#f8fafc] min-h-screen cursor-wait">
+
+                    {/* SECTION 1: HERO SKELETON */}
+                    <div className="w-full bg-[#f0eeff] pt-8 md:pt-16 pb-16">
+                        <div className="max-w-7xl mx-auto px-6 md:px-8">
+
+                            <div className="flex flex-col md:flex-row items-center justify-between min-h-[50vh] mb-20">
+                                {/* ซ้าย: ข้อความ */}
+                                <div className="w-full md:w-1/2 flex flex-col items-start gap-6 z-10">
+                                    {/* Badge */}
+                                    <div className="w-48 h-10 bg-white/60 rounded-full animate-pulse shadow-sm"></div>
+
+                                    {/* Heading */}
+                                    <div className="w-full max-w-lg space-y-4">
+                                        <div className="h-12 md:h-16 bg-gray-300/60 rounded-2xl animate-pulse w-full"></div>
+                                        <div className="h-12 md:h-16 bg-gray-300/60 rounded-2xl animate-pulse w-3/4"></div>
+                                    </div>
+
+                                    {/* Paragraph */}
+                                    <div className="w-full max-w-md space-y-3 mt-2">
+                                        <div className="h-4 bg-gray-300/50 rounded-full animate-pulse w-full"></div>
+                                        <div className="h-4 bg-gray-300/50 rounded-full animate-pulse w-5/6"></div>
+                                        <div className="h-4 bg-gray-300/50 rounded-full animate-pulse w-4/6"></div>
+                                    </div>
+
+                                    {/* Button */}
+                                    <div className="h-14 w-40 bg-gray-300/70 rounded-full animate-pulse mt-4"></div>
+                                </div>
+
+                                {/* ขวา: 3D Elements Placeholder */}
+                                <div className="w-full md:w-1/2 flex justify-center mt-16 md:mt-0 relative">
+                                    <div className="absolute right-10 -top-10 w-32 h-32 bg-gray-300/50 rounded-full animate-pulse z-20"></div>
+                                    <div className="w-56 h-64 md:w-72 md:h-80 bg-gray-200/60 rounded-[32px] animate-pulse border-4 border-gray-100/50 flex flex-col items-center justify-center gap-4">
+                                        <div className="w-24 h-24 bg-gray-300/50 rounded-full animate-pulse"></div>
+                                        <div className="bg-gray-300/40 w-2/3 h-4 rounded-full"></div>
+                                        <div className="bg-gray-300/40 w-1/2 h-4 rounded-full"></div>
+                                    </div>
+                                    <div className="absolute left-10 bottom-0 w-8 h-8 bg-gray-300/60 rounded-full animate-pulse"></div>
+                                </div>
+                            </div>
+
+                            {/* กล่องสถิติ 5 กล่อง SKELETON */}
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6 mb-12">
+                                {Array.from({ length: 5 }).map((_, idx) => (
+                                    <div key={idx} className="bg-white/50 backdrop-blur-sm rounded-[24px] p-5 md:p-6 h-36 flex flex-col justify-between animate-pulse shadow-sm border border-white/60">
+                                        <div className="w-12 h-12 bg-gray-200/80 rounded-[14px]"></div>
+                                        <div>
+                                            <div className="w-20 h-3 bg-gray-200/80 rounded-full mb-2.5"></div>
+                                            <div className="w-16 h-8 bg-gray-300/70 rounded-full"></div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* ข้อมูลสมาชิก & กราฟวงกลม SKELETON */}
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                <div className="lg:col-span-2">
+                                    <div className="bg-white rounded-[24px] p-6 md:p-8 h-full flex flex-col shadow-sm">
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <div className="w-2 h-7 bg-gray-200 animate-pulse rounded-full"></div>
+                                            <div className="w-48 h-6 bg-gray-200 animate-pulse rounded-full"></div>
+                                        </div>
+                                        <div className="flex flex-col gap-3 flex-1">
+                                            {Array.from({ length: 6 }).map((_, idx) => (
+                                                <div key={idx} className="flex justify-between items-center p-4 bg-[#f8f9fa] rounded-2xl animate-pulse border border-gray-100">
+                                                    <div className="flex items-center gap-4 w-full">
+                                                        <div className="w-10 h-10 rounded-full bg-gray-200 shrink-0"></div>
+                                                        <div className="flex flex-col gap-2 w-1/3">
+                                                            <div className="h-4 bg-gray-200 rounded-full w-full"></div>
+                                                            <div className="h-3 bg-gray-200 rounded-full w-2/3"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Placeholder ฝั่งขวา (เผื่อสำหรับกราฟ) */}
+                                <div className="hidden lg:block lg:col-span-1">
+                                    <div className="bg-white rounded-[24px] p-6 h-full shadow-sm flex flex-col items-center justify-center animate-pulse">
+                                        <div className="w-48 h-48 bg-gray-200 rounded-full mb-6"></div>
+                                        <div className="w-3/4 h-4 bg-gray-200 rounded-full mb-3"></div>
+                                        <div className="w-1/2 h-4 bg-gray-200 rounded-full"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
                 </div>
             ) : children}
         </AppContext.Provider>
