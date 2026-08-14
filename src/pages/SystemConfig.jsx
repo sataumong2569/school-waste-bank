@@ -1,5 +1,14 @@
 import { useState } from 'react';
-import { CurrencyDollarIcon, CalendarDaysIcon, GiftIcon, PlusIcon, TrashIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import {
+    CurrencyDollarIcon, CalendarDaysIcon, GiftIcon, PlusIcon, TrashIcon, CheckCircleIcon,
+    TrophyIcon,
+    StarIcon,
+    TicketIcon,
+    SparklesIcon,
+    HeartIcon,
+    FireIcon,
+    BookmarkIcon
+} from '@heroicons/react/24/outline';
 import { WASTE_CATEGORIES, DEFAULT_PRICES } from '../utils/wasteConfig';
 import { useApp } from '../AppContext';
 
@@ -70,6 +79,17 @@ export default function SystemConfig() {
         }
     };
 
+    const REWARD_ICONS = [
+        { name: 'Gift', icon: GiftIcon, label: 'ของขวัญ' },
+        { name: 'Trophy', icon: TrophyIcon, label: 'ถ้วยรางวัล' },
+        { name: 'Star', icon: StarIcon, label: 'ดาว' },
+        { name: 'Ticket', icon: TicketIcon, label: 'ตั๋ว/บัตรกำนัล' },
+        { name: 'Sparkles', icon: SparklesIcon, label: 'พิเศษ' },
+        { name: 'Heart', icon: HeartIcon, label: 'ความสุข' },
+        { name: 'Fire', icon: FireIcon, label: 'ยอดฮิต' },
+        { name: 'Bookmark', icon: BookmarkIcon, label: 'เครื่องเขียน' },
+    ];
+
     return (
         <div className="w-full bg-[#f8fafc] min-h-screen font-['Nunito'] pt-6 pb-24">
             <div className="max-w-6xl mx-auto px-4 md:px-8 fade-up">
@@ -136,7 +156,7 @@ export default function SystemConfig() {
                             <div className="pt-2">
                                 <button
                                     type="submit"
-                                    className="w-full bg-[#fffbeb] hover:bg-[#f59e0b] text-[#d97706] hover:text-white border border-[#fde68a] hover:border-[#f59e0b] font-bold text-sm py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm"
+                                    className="w-full bg-[#fffbeb] hover:bg-[#f59e0b] text-[#d97706] hover:text-white border border-[#fde68a] hover:border-[#f59e0b] font-bold text-sm py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-sm cursor-pointer active:scale-[0.98]"
                                 >
                                     <CheckCircleIcon className="w-5 h-5 stroke-2" /> บันทึกระยะเวลา
                                 </button>
@@ -158,7 +178,7 @@ export default function SystemConfig() {
                                     <button
                                         type="button"
                                         onClick={handleStartAddReward}
-                                        className="bg-white/25 hover:bg-white/35 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all active:scale-95"
+                                        className="bg-white/25 hover:bg-white/35 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all duration-200 cursor-pointer active:scale-95"
                                     >
                                         <PlusIcon className="w-4 h-4 stroke-2" /> เพิ่ม
                                     </button>
@@ -167,22 +187,34 @@ export default function SystemConfig() {
 
                             <div className="flex flex-col gap-3 flex-1 overflow-y-auto hide-scrollbar">
                                 {/* แสดงรายการของรางวัลที่มีอยู่ */}
-                                {rewards.map(item => (
-                                    <div key={item.id} className="flex justify-between items-center bg-[#f8fafc]/60 border border-[#e2e8f0] p-3.5 rounded-xl hover:border-[#c4b5fd] transition-all group">
-                                        <div className="flex flex-col">
-                                            <span className="font-bold text-[#0f172a] text-sm">{item.name}</span>
-                                            <span className="text-[10px] text-[#64748b] font-semibold">ในสต็อก: {item.stock} ชิ้น</span>
+                                {rewards.map(item => {
+                                    // 🟢 ดึงไอคอนมาแสดง ถ้าไม่มีให้ใช้รูปกล่องของขวัญเป็นค่าเริ่มต้น
+                                    const SelectedIconData = REWARD_ICONS.find(icon => icon.name === item.iconName);
+                                    const DisplayIcon = SelectedIconData ? SelectedIconData.icon : GiftIcon;
+
+                                    return (
+                                        <div key={item.id} className="flex justify-between items-center bg-[#f8fafc]/60 border border-[#e2e8f0] p-3.5 rounded-xl hover:border-[#c4b5fd] transition-all group">
+                                            <div className="flex items-center gap-3">
+                                                {/* 🟢 โชว์รูปไอคอนที่นี่ */}
+                                                <div className="w-9 h-9 rounded-xl bg-purple-100 text-[#7c3aed] flex items-center justify-center shrink-0">
+                                                    <DisplayIcon className="w-5 h-5 stroke-2" />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-[#0f172a] text-sm">{item.name}</span>
+                                                    <span className="text-[10px] text-[#64748b] font-semibold">ในสต็อก: {item.stock} ชิ้น</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="bg-white text-[#7c3aed] font-bold px-3 py-1 rounded-lg text-sm border border-[#e2e8f0] shadow-sm">
+                                                    {item.points} pts
+                                                </span>
+                                                <button type="button" onClick={() => handleDeleteReward(item.id)} className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer active:scale-95">
+                                                    <TrashIcon className="w-5 h-5" />
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-3">
-                                            <span className="bg-white text-[#7c3aed] font-bold px-3 py-1 rounded-lg text-sm border border-[#e2e8f0] shadow-sm">
-                                                {item.points} pts
-                                            </span>
-                                            <button type="button" onClick={() => handleDeleteReward(item.id)} className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity p-1">
-                                                <TrashIcon className="w-5 h-5" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
 
                                 {/* 🟢 กล่องฟอร์มเพิ่มของรางวัลแบบต่อท้าย ( Inline Form ) */}
                                 {isAddingReward && (
@@ -202,8 +234,7 @@ export default function SystemConfig() {
                                                     setNewRewardForm({ ...newRewardForm, name: e.target.value });
                                                     if (e.target.value.trim()) setRewardErrors({ ...rewardErrors, name: false });
                                                 }}
-                                                className={`w-full bg-white border px-3.5 py-2 rounded-xl text-xs font-bold text-[#0f172a] outline-none transition-colors ${rewardErrors.name ? 'border-red-500 focus:border-red-500' : 'border-[#e2e8f0] focus:border-[#7c3aed]'
-                                                    }`}
+                                                className={`w-full bg-white border px-3.5 py-2 rounded-xl text-xs font-bold text-[#0f172a] outline-none transition-colors ${rewardErrors.name ? 'border-red-500 focus:border-red-500' : 'border-[#e2e8f0] focus:border-[#7c3aed]'}`}
                                             />
                                             {rewardErrors.name && <span className="text-[10px] text-red-500 font-bold ml-1">กรุณากรอกชื่อของรางวัล</span>}
                                         </div>
@@ -211,8 +242,7 @@ export default function SystemConfig() {
                                         {/* ช่องกรอกแต้ม และ สต็อก */}
                                         <div className="grid grid-cols-2 gap-2">
                                             <div className="flex flex-col gap-1">
-                                                <div className={`flex items-center bg-white border rounded-xl px-3 py-1.5 transition-colors ${rewardErrors.points ? 'border-red-500' : 'border-[#e2e8f0] focus-within:border-[#7c3aed]'
-                                                    }`}>
+                                                <div className={`flex items-center bg-white border rounded-xl px-3 py-1.5 transition-colors ${rewardErrors.points ? 'border-red-500' : 'border-[#e2e8f0] focus-within:border-[#7c3aed]'}`}>
                                                     <input
                                                         type="number"
                                                         min="1"
@@ -230,8 +260,7 @@ export default function SystemConfig() {
                                             </div>
 
                                             <div className="flex flex-col gap-1">
-                                                <div className={`flex items-center bg-white border rounded-xl px-3 py-1.5 transition-colors ${rewardErrors.stock ? 'border-red-500' : 'border-[#e2e8f0] focus-within:border-[#7c3aed]'
-                                                    }`}>
+                                                <div className={`flex items-center bg-white border rounded-xl px-3 py-1.5 transition-colors ${rewardErrors.stock ? 'border-red-500' : 'border-[#e2e8f0] focus-within:border-[#7c3aed]'}`}>
                                                     <input
                                                         type="number"
                                                         min="0"
@@ -249,19 +278,46 @@ export default function SystemConfig() {
                                             </div>
                                         </div>
 
+                                        {/* 🟢 ส่วนเลือกไอคอน (Icon Picker) */}
+                                        <div className="flex flex-col gap-1.5 mt-1 border-t border-purple-100 pt-3">
+                                            <label className="text-[10px] font-bold text-[#7c3aed]">เลือกไอคอนของรางวัล</label>
+                                            <div className="grid grid-cols-4 gap-2">
+                                                {REWARD_ICONS.map((item) => {
+                                                    const IconComponent = item.icon;
+                                                    // ตรวจสอบว่าไอคอนนี้ถูกเลือกอยู่หรือไม่ (ถ้ายังไม่เลือกอะไร ให้ Gift เป็นค่าเริ่มต้น)
+                                                    const isSelected = (newRewardForm.iconName || 'Gift') === item.name;
+
+                                                    return (
+                                                        <button
+                                                            key={item.name}
+                                                            type="button"
+                                                            onClick={() => setNewRewardForm({ ...newRewardForm, iconName: item.name })}
+                                                            className={`py-2 flex items-center justify-center rounded-xl border transition-all duration-200 cursor-pointer active:scale-95 ${isSelected
+                                                                    ? 'bg-[#7c3aed] text-white border-[#7c3aed] shadow-md scale-[1.02]'
+                                                                    : 'bg-white text-[#94a3b8] border-[#e2e8f0] hover:bg-[#f8fafc] hover:text-[#64748b]'
+                                                                }`}
+                                                            title={item.label}
+                                                        >
+                                                            <IconComponent className="w-5 h-5 stroke-2" />
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+
                                         {/* ปุ่มยืนยัน และ ยกเลิก */}
-                                        <div className="flex items-center justify-end gap-2 pt-1">
+                                        <div className="flex items-center justify-end gap-2 pt-2 mt-1">
                                             <button
                                                 type="button"
                                                 onClick={handleCancelAddReward}
-                                                className="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-bold transition-colors"
+                                                className="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-bold transition-colors cursor-pointer active:scale-95"
                                             >
                                                 ยกเลิก
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={handleConfirmAddReward}
-                                                className="px-4 py-1.5 rounded-lg bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-xs font-bold transition-all shadow-sm"
+                                                className="px-4 py-1.5 rounded-lg bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-xs font-bold transition-all shadow-sm cursor-pointer active:scale-95"
                                             >
                                                 ยืนยันเพิ่ม
                                             </button>
@@ -322,7 +378,10 @@ export default function SystemConfig() {
                         </div>
 
                         <div className="flex justify-end border-t border-[#f1f5f9] pt-4 mt-auto">
-                            <button type="submit" className="w-full md:w-auto bg-[#10b981] text-white hover:bg-[#059669] font-bold text-sm py-3 px-8 rounded-xl transition-all shadow-[0_4px_12px_rgba(16,185,129,0.3)] flex items-center justify-center gap-2">
+                            <button
+                                type="submit"
+                                className="w-full md:w-auto bg-[#10b981] text-white hover:bg-[#059669] font-bold text-sm py-3 px-8 rounded-xl transition-all duration-200 shadow-[0_4px_12px_rgba(16,185,129,0.3)] flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+                            >
                                 <CheckCircleIcon className="w-5 h-5 stroke-2" /> บันทึกราคากลางใหม่
                             </button>
                         </div>

@@ -1,91 +1,94 @@
 import { Link } from 'react-router-dom';
+import umonglogo from '../assets/umong1municipal_icon_notra.png';
 
 export default function Footer() {
     return (
-        // Footer โค้งมนด้านบน พร้อมเงาฟุ้งๆ นุ่มนวลแบบ Clay
-        <footer className="w-full bg-white shadow-[0_-15px_40px_rgba(0,0,0,0.04)] rounded-t-[40px] md:rounded-t-[60px] mt-24 relative z-10 pt-6 overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-[6px] md:h-[8px] bg-gradient-to-r from-[#7c3aed] via-[#38bdf8] to-[#10b981] opacity-80"></div>
+        <footer className="w-full bg-[#f8fafc] pt-16 pb-8 px-12 md:px-32 border-t border-[#e2e8f0]">
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-12 md:gap-20 items-start">
 
-            <div className="max-w-7xl mx-auto px-8 md:px-10 py-12 md:py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-12">
+                {/* ================= ฝั่งซ้าย: โลโก้ + ชื่อโรงเรียน (บรรทัดเดียว) + ที่อยู่ ================= */}
+                <div className="w-full md:w-[55%] flex flex-col items-start">
 
-                {/* คอลัมน์ที่ 1: ชื่อโปรเจกต์และที่อยู่ */}
-                <div className="flex flex-col fade-up" style={{ animationDelay: '0.1s' }}>
-                    <h2 className="font-black text-xl md:text-2xl text-[#1e1b4b] mb-5 flex items-center gap-2.5">
-                        <span className="w-2 h-6 md:h-7 bg-[#7c3aed] rounded-full shadow-sm"></span>
-                        Zero waste School
-                    </h2>
-                    <p className="font-bold text-sm text-[#6d6a8a] leading-relaxed">
-                        โรงเรียนเทศบาลอุโมงค์ 1<br />
-                        ที่อยู่ 1/1 หมู่ 1 ตำบลอุโมงค์<br />
-                        อำเภอเมือง จังหวัดลำพูน 51150<br />
-                    </p>
+                    {/* แถวบน: โลโก้ + ชื่อโรงเรียน */}
+                    <div className="flex items-center gap-4 mb-3">
+                        <div className="p-3 bg-white rounded-2xl shadow-[0_4px_10px_rgba(0,0,0,0.05)] border border-[#e2e8f0]/60 flex items-center justify-center">
+                            <img src={umonglogo} alt="Logo" className="w-16 h-16 object-contain" />
+                        </div>
+                        <h3 className="font-['Fredoka_One'] text-xl md:text-2xl text-[#1e1b4b]">
+                            โรงเรียนเทศบาลอุโมงค์ 1
+                        </h3>
+                    </div>
+
+                    {/* รายละเอียดส่วนล่าง */}
+                    <div className="w-full">
+                        {/* เส้นคั่น */}
+                        <div className="w-full h-[1px] bg-[#cbd5e1] mb-4"></div>
+
+                        {/* ที่อยู่ */}
+                        <p className="text-[#64748b] text-sm leading-relaxed font-['Nunito'] font-semibold">
+                            ที่อยู่ 1/1 หมู่ 1 ตำบลอุโมงค์ อำเภอเมือง<br />
+                            จังหวัดลำพูน รหัสไปรษณีย์ 51150<br />
+                            โทรศัพท์ 053-541407
+                        </p>
+                    </div>
                 </div>
 
-                {/* คอลัมน์ที่ 2: เกี่ยวกับโรงเรียน */}
-                <div className="flex flex-col fade-up" style={{ animationDelay: '0.2s' }}>
-                    <h3 className="font-black text-lg text-[#1e1b4b] mb-5 flex items-center gap-2.5">
-                        <span className="w-2 h-6 bg-[#f59e0b] rounded-full shadow-sm"></span>
-                        เกี่ยวกับโรงเรียน
-                    </h3>
-                    <ul className="flex flex-col gap-3.5 font-bold text-sm text-[#6d6a8a]">
-                        {['หน้าหลัก (Dashboard)', 'ข้อมูลสถานศึกษา', 'รายชื่อสมาชิก'].map((item, idx) => (
-                            <li key={idx}>
-                                <a href="#" className="group flex items-center gap-2.5 hover:text-[#7c3aed] transition-all w-max">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-[#cbd5e1] group-hover:bg-[#7c3aed] group-hover:scale-[1.8] transition-all"></span>
-                                    <span className="group-hover:translate-x-1 transition-transform">{item}</span>
+
+                {/* ================= ฝั่งขวา: เมนู 2 คอลัมน์ ================= */}
+                <div className="w-full md:w-[45%] grid grid-cols-1 sm:grid-cols-2 gap-8 md:gap-12">
+
+                    {/* คอลัมน์ย่อย 1: เกี่ยวกับโรงเรียน */}
+                    <div className="flex flex-col">
+                        <h3 className="font-bold text-base text-[#1e1b4b] mb-3">
+                            เกี่ยวกับโรงเรียน
+                        </h3>
+                        <div className="w-full h-[2px] bg-[#cbd5e1] mb-4"></div>
+
+                        <ul className="flex flex-col gap-3 font-bold text-sm text-[#6d6a8a]">
+                            <li>
+                                <Link to="/" className="hover:text-[#7c3aed] transition-colors flex items-center gap-1.5">
+                                    <span className="text-xs text-[#7c3aed]">▸</span> หน้าหลัก
+                                </Link>
+                            </li>
+                            <li>
+                                <Link to="/members" className="hover:text-[#7c3aed] transition-colors flex items-center gap-1.5">
+                                    <span className="text-xs text-[#7c3aed]">▸</span> ข้อมูลสมาชิก
+                                </Link>
+                            </li>
+                            <li>
+                                <a href="https://umong1municipal.ac.th/" target="_blank" rel="noopener noreferrer" className="hover:text-[#7c3aed] transition-colors flex items-center gap-1.5">
+                                    <span className="text-xs text-[#7c3aed]">▸</span> ข้อมูลสถานศึกษา
                                 </a>
                             </li>
-                        ))}
-                    </ul>
-                </div>
+                        </ul>
+                    </div>
 
-                {/* คอลัมน์ที่ 3: ข่าวสารและกิจกรรม */}
-                <div className="flex flex-col fade-up" style={{ animationDelay: '0.3s' }}>
-                    <h3 className="font-black text-lg text-[#1e1b4b] mb-5 flex items-center gap-2.5">
-                        <span className="w-2 h-6 bg-[#38bdf8] rounded-full shadow-sm"></span>
-                        ข่าวสารและกิจกรรม
-                    </h3>
-                    <ul className="flex flex-col gap-3.5 font-bold text-sm text-[#6d6a8a]">
-                        {['ข่าวสารและกิจกรรม', 'โครงการ/กิจกรรมเด่น', 'แลกรางวัล (Item Shop)'].map((item, idx) => (
-                            <li key={idx}>
-                                <a href="#" className="group flex items-center gap-2.5 hover:text-[#38bdf8] transition-all w-max">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-[#cbd5e1] group-hover:bg-[#38bdf8] group-hover:scale-[1.8] transition-all"></span>
-                                    <span className="group-hover:translate-x-1 transition-transform">{item}</span>
-                                </a>
+                    {/* คอลัมน์ย่อย 2: ติดต่อสอบถาม */}
+                    <div className="flex flex-col">
+                        <h3 className="font-bold text-base text-[#1e1b4b] mb-3">
+                            ติดต่อสอบถาม
+                        </h3>
+                        <div className="w-full h-[2px] bg-[#cbd5e1] mb-4"></div>
+
+                        <ul className="flex flex-col gap-3 text-sm text-[#6d6a8a] font-medium">
+                            <li className="flex items-center gap-2.5">
+                                <span className="w-7 h-7 rounded-full bg-red-50 text-red-500 flex items-center justify-center text-xs shrink-0 shadow-sm">📞</span>
+                                053-541407
                             </li>
-                        ))}
-                    </ul>
-                </div>
+                            <li className="flex items-center gap-2.5">
+                                <span className="w-7 h-7 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-xs shrink-0 shadow-sm">✉️</span>
+                                email@umong1.ac.th
+                            </li>
+                        </ul>
+                    </div>
 
-                {/* คอลัมน์ที่ 4: ติดต่อสอบถาม */}
-                <div className="flex flex-col fade-up" style={{ animationDelay: '0.4s' }}>
-                    <h3 className="font-black text-lg text-[#1e1b4b] mb-5 flex items-center gap-2.5">
-                        <span className="w-2 h-6 bg-[#ec4899] rounded-full shadow-sm"></span>
-                        ติดต่อสอบถาม
-                    </h3>
-                    <ul className="flex flex-col gap-4 font-bold text-sm text-[#6d6a8a]">
-                        <li className="flex items-center gap-3.5 group cursor-default w-max">
-                            <div className="w-10 h-10 rounded-[14px] bg-[#f0eeff] flex items-center justify-center shadow-[inset_-2px_-2px_4px_rgba(0,0,0,0.05)] text-lg group-hover:bg-[#7c3aed] group-hover:text-white group-hover:shadow-[0_4px_10px_rgba(124,58,237,0.3),_inset_0_-2px_4px_rgba(0,0,0,0.2)] transition-all duration-300">📍</div>
-                            <span className="group-hover:text-[#1e1b4b] transition-colors">โรงเรียนเทศบาลอุโมงค์ 1</span>
-                        </li>
-                        <li className="flex items-center gap-3.5 group cursor-default w-max">
-                            <div className="w-10 h-10 rounded-[14px] bg-[#ecfdf5] flex items-center justify-center shadow-[inset_-2px_-2px_4px_rgba(0,0,0,0.05)] text-lg group-hover:bg-[#10b981] group-hover:text-white group-hover:shadow-[0_4px_10px_rgba(16,185,129,0.3),_inset_0_-2px_4px_rgba(0,0,0,0.2)] transition-all duration-300">☎️</div>
-                            <span className="group-hover:text-[#1e1b4b] transition-colors">053-541407</span>
-                        </li>
-                        <li className="flex items-center gap-3.5 group cursor-pointer w-max">
-                            <div className="w-10 h-10 rounded-[14px] bg-[#fff7ed] flex items-center justify-center shadow-[inset_-2px_-2px_4px_rgba(0,0,0,0.05)] text-lg group-hover:bg-[#f59e0b] group-hover:text-white group-hover:shadow-[0_4px_10px_rgba(245,158,11,0.3),_inset_0_-2px_4px_rgba(0,0,0,0.2)] transition-all duration-300">📱</div>
-                            <span className="group-hover:text-[#f59e0b] transition-colors">Line: @schoolwaste</span>
-                        </li>
-                    </ul>
                 </div>
 
             </div>
 
-            {/* ส่วนที่ 3: แถบ Copyright  */}
-            <div className="bg-[#f0eeff] pt-5 pb-28 md:py-5 text-center mt-4">
-                <Link to="/login" className="font-black text-[10px] md:text-xs text-[#6d6a8a] tracking-[0.2em] uppercase hover:text-[#7c3aed] transition-colors cursor-pointer inline-block">
-                    © 2026 School Waste Management. All Rights Reserved.
-                </Link>
+            {/* ลิขสิทธิ์ */}
+            <div className="max-w-7xl mx-auto mt-16 pt-6 border-t border-[#e2e8f0] text-center text-[#94a3b8] text-xs font-bold">
+                © 2026 Umong Municipal School 1 - All rights reserved.
             </div>
         </footer>
     )

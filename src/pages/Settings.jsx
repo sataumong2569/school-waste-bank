@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
     MagnifyingGlassIcon, PlusIcon, PencilSquareIcon, XMarkIcon,
@@ -6,16 +6,20 @@ import {
     ChevronLeftIcon, ChevronRightIcon, ScaleIcon, TrashIcon, Cog8ToothIcon,
     UserPlusIcon, PencilIcon, ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
+import Cropper from 'react-easy-crop';
 
 import { WASTE_CATEGORIES, DEFAULT_PRICES } from '../utils/wasteConfig';
 import { useApp } from '../AppContext';
+import { uploadImageToCloudinary } from '../utils/uploadImage';
+import { getCroppedImg } from '../utils/cropImage';
 
 export default function Settings() {
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState('');
     const [formData, setFormData] = useState({});
 
-    // States สำหรับระบบ "รับฝากขยะ (ตะกร้า)"
+    // States สำหรับระบบรับฝากขยะ
     const [depositMemberSearch, setDepositMemberSearch] = useState('');
     const [selectedDepositMember, setSelectedDepositMember] = useState(null);
     const [depositCart, setDepositCart] = useState([]);
@@ -25,18 +29,55 @@ export default function Settings() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
-    // ดึงข้อมูลจาก Context แทนการสร้างตัวแปรใหม่
     const { members, addMember, updateMember, deleteMember, pricing, sysStats, processDeposit } = useApp();
 
-    const filteredMembers = members.filter(member => member.fullName.includes(searchTerm) || member.grade.includes(searchTerm)); const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
+    const filteredMembers = members.filter(member => member.fullName.includes(searchTerm) || member.grade.includes(searchTerm));
+    const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
     const displayedMembers = filteredMembers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+    // States สำหรับอัปโหลดและ Crop รูปภาพ
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef(null);
+
+    // States ใหม่สำหรับ react-easy-crop
+    const [imageSrc, setImageSrc] = useState(null);
+    const [crop, setCrop] = useState({ x: 0, y: 0 });
+    const [zoom, setZoom] = useState(1);
+    const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+
+    // ฟังก์ชันดึงรูปภาพเข้ามาใน Cropper (ยังไม่อัปโหลด)
+    const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            setImageSrc(reader.result);
+        };
+        reader.readAsDataURL(file);
+
+        // เคลียร์ค่า input file เพื่อให้สามารถเลือกรูปเดิมซ้ำได้ในกรณีที่กดยกเลิกไป
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
+    const triggerFileInput = () => {
+        fileInputRef.current.click();
+    };
 
     const openModal = (mode, memberData = null) => {
         setModalMode(mode);
+        // รีเซ็ตค่าการ Crop ทุกครั้งที่เปิด Modal
+        setImageSrc(null);
+        setCrop({ x: 0, y: 0 });
+        setZoom(1);
+        setCroppedAreaPixels(null);
+
         if (mode === 'edit' && memberData) {
             setFormData(memberData);
         } else if (mode === 'add') {
-            setFormData({ fullName: '', nickname: '', grade: '', balance: 0, carbonPoints: 0, rewardPoints: 0, status: 'กำลังศึกษา', color: 'bg-[#3b82f6]' });
+            setFormData({ fullName: '', nickname: '', grade: '', balance: 0, carbonPoints: 0, rewardPoints: 0, status: 'กำลังศึกษา', color: 'bg-[#3b82f6]', image: '' });
         } else if (mode === 'deposit') {
             setDepositCart([]);
             setSelectedDepositMember(null);
@@ -77,32 +118,48 @@ export default function Settings() {
     const cartTotalMoney = depositCart.reduce((sum, item) => sum + item.totalPrice, 0).toFixed(2);
     const cartTotalCarbon = depositCart.reduce((sum, item) => sum + item.totalCarbon, 0).toFixed(4);
 
-    const handleSave = (e) => {
+    // ปรับปรุงฟังก์ชันบันทึกให้ทำการ Crop ก่อน Upload
+    const handleSave = async (e) => {
         e.preventDefault();
+        setIsUploading(true);
 
-        if (modalMode === 'add') {
-            addMember(formData);
+        try {
+            let finalImageUrl = formData.image;
 
-        } else if (modalMode === 'edit') {
-            updateMember(formData);
+            // ตรวจสอบว่ามีการอัปโหลดและ Crop รูปใหม่หรือไม่
+            if (imageSrc && croppedAreaPixels) {
+                const croppedFile = await getCroppedImg(imageSrc, croppedAreaPixels);
+                const uploadedUrl = await uploadImageToCloudinary(croppedFile);
+                if (uploadedUrl) {
+                    finalImageUrl = uploadedUrl;
+                } else {
+                    throw new Error("อัปโหลดรูปภาพไม่สำเร็จ");
+                }
+            }
 
+            const finalData = { ...formData, image: finalImageUrl };
+
+            if (modalMode === 'add') {
+                addMember(finalData);
+            } else if (modalMode === 'edit') {
+                updateMember(finalData);
+            }
+
+            closeModal();
+        } catch (error) {
+            console.error("Save error:", error);
+            alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง");
+        } finally {
+            setIsUploading(false);
         }
-
-        closeModal();
     };
-
-
 
     return (
         <div className="w-full min-h-screen font-['Nunito'] flex flex-col">
 
-            {/* =================================================== */}
             {/* ส่วนที่ 1: สีขาว (Overview & Quick Actions) */}
-            {/* =================================================== */}
-            <div className="bg-white pt-8 pb-4 w-full"> {/* ลด pb-10 เป็น pb-4 เพื่อลดระยะห่าง */}
+            <div className="bg-white pt-8 pb-4 w-full">
                 <div className="max-w-6xl mx-auto px-4 md:px-8 fade-up">
-
-
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
                         <div className="bg-white rounded-2xl border border-[#e2e8f0] p-6 shadow-sm">
@@ -162,10 +219,8 @@ export default function Settings() {
                 <path fill="currentColor" d="M0,32L48,42.7C96,53,192,75,288,74.7C384,75,480,53,576,48C672,43,768,53,864,64C960,75,1056,85,1152,74.7C1248,64,1344,32,1392,16L1440,0L1440,100L1392,100C1344,100,1248,100,1152,100C1056,100,960,100,864,100C768,100,672,100,576,100C480,100,384,100,288,100C192,100,96,100,48,100L0,100Z"></path>
             </svg>
 
-            {/* =================================================== */}
             {/* ส่วนที่ 2: สีเทาอ่อน (ตาราง Directory) */}
-            {/* =================================================== */}
-            <div className="bg-[#fafafa] flex-1 pb-20 pt-4"> {/* ลด pt-10 เป็น pt-4 */}
+            <div className="bg-[#fafafa] flex-1 pb-20 pt-4">
                 <div className="max-w-6xl mx-auto px-4 md:px-8 fade-up" style={{ animationDelay: '0.2s' }}>
                     <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-sm overflow-hidden flex flex-col">
                         <div className="p-5 border-b border-[#e2e8f0] flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -192,9 +247,14 @@ export default function Settings() {
 
                                     {/* คอลัมน์ 1: ชื่อ */}
                                     <div className="flex items-center gap-3 flex-1 overflow-hidden">
-                                        <div className={`w-9 h-9 md:w-8 md:h-8 rounded-full ${member.color} flex items-center justify-center text-white font-black text-xs shrink-0`}>
-                                            {member.fullName.split(' ')[1]?.[0] || 'U'}
+                                        <div className={`w-9 h-9 md:w-8 md:h-8 rounded-full ${member.color} flex items-center justify-center text-white font-black text-xs shrink-0 overflow-hidden`}>
+                                            {member.image ? (
+                                                <img src={member.image} alt="Profile" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span>{member.fullName.split(' ')[1]?.[0] || 'U'}</span>
+                                            )}
                                         </div>
+
                                         <div className="flex flex-col overflow-hidden">
                                             <span className="font-bold text-[#0f172a] text-sm truncate">{member.fullName}</span>
                                             <span className="text-[10px] text-[#64748b] font-semibold md:hidden truncate">
@@ -220,7 +280,10 @@ export default function Settings() {
 
                                     {/* คอลัมน์ 5: จัดการ */}
                                     <div className="flex justify-end shrink-0">
-                                        <button onClick={() => openModal('edit', member)} className="bg-[#fef2f2] text-[#ef4444] hover:bg-[#fee2e2] px-3 py-1.5 rounded-lg md:rounded-full text-xs font-bold flex items-center gap-1.5 transition-colors border border-[#fecaca]">
+                                        <button
+                                            onClick={() => openModal('edit', member)}
+                                            className="bg-[#fef2f2] text-[#ef4444] px-3 py-1.5 rounded-lg md:rounded-full text-xs font-bold flex items-center gap-1.5 border border-[#fecaca] cursor-pointer hover:bg-[#fee2e2] hover:shadow-sm active:scale-95 transition-all duration-200"
+                                        >
                                             <PencilSquareIcon className="w-4 h-4 md:w-3.5 md:h-3.5" />
                                             <span className="hidden sm:inline">แก้ไข</span>
                                         </button>
@@ -240,25 +303,21 @@ export default function Settings() {
                 </div>
             </div>
 
-            {/* ========================================= */}
             {/* MODALS SECTION */}
-            {/* ========================================= */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
                     <div className="absolute inset-0 bg-[#0f172a]/60 backdrop-blur-sm transition-opacity" onClick={closeModal}></div>
 
-                    {/* 1. Modal: เพิ่ม/แก้ไขสมาชิก (ปรับธีมสี Add=ฟ้า, Edit=แดง และแก้ปุ่มทับเมนมือถือ) */}
+                    {/* 1. Modal: เพิ่ม/แก้ไขสมาชิก */}
                     {(modalMode === 'add' || modalMode === 'edit') && (
                         <form
                             onSubmit={handleSave}
                             className="relative w-full max-w-[95%] md:max-w-2xl bg-white rounded-[24px] p-6 md:p-8 flex flex-col gap-6 shadow-[0_10px_40px_rgba(0,0,0,0.1)] animate-modal-pop max-h-[90vh] overflow-y-auto hide-scrollbar pb-24 md:pb-8"
                         >
-                            {/* ปุ่มปิด (X) มุมขวาบน */}
                             <button type="button" onClick={closeModal} className="absolute top-4 right-4 p-1.5 md:p-2 bg-gray-50 rounded-full hover:bg-red-50 hover:text-red-500 text-gray-400 transition-colors z-20">
                                 <XMarkIcon className="w-5 h-5 font-bold" />
                             </button>
 
-                            {/* หัวข้อ Modal (เปลี่ยนสีตามโหมด: Add = ฟ้า, Edit = แดง) */}
                             <div className="flex items-center gap-2 border-b border-gray-100 pb-4">
                                 {modalMode === 'add' ? (
                                     <UserPlusIcon className="w-6 h-6 text-[#3b82f6] stroke-2" />
@@ -270,20 +329,73 @@ export default function Settings() {
                                 </h2>
                             </div>
 
-                            {/* เนื้อหาหลักแบ่งเป็น 2 คอลัมน์ */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                                 {/* --- คอลัมน์ 1: โปรไฟล์ & ข้อมูลพื้นฐาน --- */}
                                 <div className="flex flex-col gap-4">
-                                    {/* รูปโปรไฟล์ */}
-                                    <div className="w-full flex justify-center">
-                                        <div className={`relative group cursor-pointer w-24 h-24 md:w-28 md:h-28 rounded-full flex items-center justify-center overflow-hidden transition-transform hover:scale-105 shadow-[0_4px_15px_rgba(0,0,0,0.08)] border-[6px] border-white ${modalMode === 'add' ? 'bg-[#3b82f6]' : 'bg-[#ef4444]'}`}>
-                                            {formData.image ? (
-                                                <img src={formData.image} alt="Profile" className="w-full h-full object-cover mix-blend-overlay opacity-90" />
-                                            ) : (
-                                                <CameraIcon className="w-8 h-8 text-white opacity-80 group-hover:opacity-100 transition-opacity" />
-                                            )}
-                                        </div>
+
+                                    {/* กล่องอัปโหลดและ Crop รูปภาพ */}
+                                    <div className="w-full flex flex-col items-center gap-3">
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            ref={fileInputRef}
+                                            onChange={handleImageUpload}
+                                            className="hidden"
+                                        />
+
+                                        {imageSrc ? (
+                                            // โหมด 1: เลือกรุปใหม่ แสดงเครื่องมือ Crop
+                                            <div className="w-full flex flex-col gap-3">
+                                                <div className="w-full h-48 md:h-56 relative bg-gray-900 rounded-xl overflow-hidden shadow-sm">
+                                                    <Cropper
+                                                        image={imageSrc}
+                                                        crop={crop}
+                                                        zoom={zoom}
+                                                        aspect={1 / 1}
+                                                        onCropChange={setCrop}
+                                                        onCropComplete={(croppedArea, areaPixels) => setCroppedAreaPixels(areaPixels)}
+                                                        onZoomChange={setZoom}
+                                                    />
+                                                </div>
+                                                <div className="w-full flex items-center gap-3 bg-[#f8fafc] px-3 py-2 rounded-xl border border-[#e2e8f0]">
+                                                    <span className="text-[10px] font-bold text-[#64748b] whitespace-nowrap">ซูม</span>
+                                                    <input
+                                                        type="range"
+                                                        value={zoom}
+                                                        min={1}
+                                                        max={3}
+                                                        step={0.1}
+                                                        onChange={(e) => setZoom(e.target.value)}
+                                                        className="flex-1 accent-[#3b82f6]"
+                                                    />
+                                                    <button type="button" onClick={() => setImageSrc(null)} className="text-[10px] font-bold text-red-500 hover:text-red-600 px-2 py-1 bg-red-50 rounded-lg whitespace-nowrap">ยกเลิก</button>
+                                                </div>
+                                            </div>
+                                        ) : formData.image ? (
+                                            // โหมด 2: โหมดแก้ไข มีรูปเดิมอยู่แล้ว
+                                            <div
+                                                onClick={triggerFileInput}
+                                                className="relative group w-full h-48 md:h-56 rounded-xl overflow-hidden cursor-pointer shadow-sm border-2 border-transparent hover:border-[#3b82f6] transition-all"
+                                            >
+                                                <img src={formData.image} alt="Profile" className="w-full h-full object-cover" />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                                    <div className="text-white flex flex-col items-center gap-1">
+                                                        <CameraIcon className="w-8 h-8" />
+                                                        <span className="text-xs font-bold">เปลี่ยนรูปภาพ</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            // โหมด 3: โหมดเพิ่ม หรือยังไม่มีรูป
+                                            <div
+                                                onClick={triggerFileInput}
+                                                className="w-full h-48 md:h-56 rounded-xl border-2 border-dashed border-[#cbd5e1] hover:border-[#3b82f6] bg-[#f8fafc] hover:bg-[#eff6ff] flex flex-col items-center justify-center cursor-pointer transition-all text-[#64748b] hover:text-[#3b82f6]"
+                                            >
+                                                <CameraIcon className="w-10 h-10 mb-2 opacity-70" />
+                                                <span className="text-sm font-bold">คลิกเพื่อเลือกรูปภาพ</span>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* ชื่อ-นามสกุล */}
@@ -359,7 +471,7 @@ export default function Settings() {
                                         />
                                     </div>
 
-                                    {/*  แต้มคาร์บอนเครดิต (ไว้แลกของ) */}
+                                    {/* แต้มคาร์บอนเครดิต */}
                                     <div>
                                         <label className="block text-xs font-bold text-[#f59e0b] mb-1">แต้มเครดิต (สำหรับแลกของ)</label>
                                         <input
@@ -394,7 +506,7 @@ export default function Settings() {
 
                             {/* --- ส่วนปุ่มด้านล่าง (ลบ, ยกเลิก และ บันทึกข้อมูล) --- */}
                             <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-2">
-                                {/* ปุ่มลบ (จะโชว์เฉพาะตอนอยู่ในโหมดแก้ไขเท่านั้น) */}
+                                {/* ปุ่มลบ */}
                                 <div>
                                     {modalMode === 'edit' && (
                                         <button
@@ -405,7 +517,7 @@ export default function Settings() {
                                                     closeModal();
                                                 }
                                             }}
-                                            className="px-4 py-2.5 rounded-xl text-red-500 hover:bg-red-50 font-bold text-sm flex items-center gap-2 transition-colors border border-transparent hover:border-red-200"
+                                            className="px-4 py-2.5 rounded-xl text-red-500 hover:bg-red-50 font-bold text-sm flex items-center gap-2 border border-transparent hover:border-red-200 cursor-pointer active:scale-95 transition-all duration-200"
                                         >
                                             <TrashIcon className="w-5 h-5 stroke-2" />
                                             <span className="hidden sm:inline">ลบสมาชิกนี้</span>
@@ -418,18 +530,21 @@ export default function Settings() {
                                     <button
                                         type="button"
                                         onClick={closeModal}
-                                        className="px-5 py-3 rounded-xl bg-gray-100 text-gray-700 font-bold text-sm hover:bg-gray-200 transition-colors"
+                                        className="px-5 py-3 rounded-xl bg-gray-100 text-gray-700 font-bold text-sm hover:bg-gray-200 cursor-pointer active:scale-95 transition-all duration-200"
                                     >
                                         ยกเลิก
                                     </button>
                                     <button
                                         type="submit"
-                                        className={`px-6 py-3 rounded-xl text-white font-bold text-sm active:scale-[0.98] transition-all ${modalMode === 'add'
-                                            ? 'bg-[#3b82f6] hover:bg-[#2563eb] shadow-[0_4px_12px_rgba(59,130,246,0.3)]'
-                                            : 'bg-[#ef4444] hover:bg-[#dc2626] shadow-[0_4px_12px_rgba(239,68,68,0.3)]'
+                                        disabled={isUploading}
+                                        className={`px-6 py-3 rounded-xl text-white font-bold text-sm transition-all duration-200 
+    ${isUploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-95'} 
+    ${modalMode === 'add'
+                                                ? 'bg-[#3b82f6] hover:bg-[#2563eb] shadow-[0_4px_12px_rgba(59,130,246,0.3)]'
+                                                : 'bg-[#ef4444] hover:bg-[#dc2626] shadow-[0_4px_12px_rgba(239,68,68,0.3)]'
                                             }`}
                                     >
-                                        บันทึกข้อมูล (Save)
+                                        {isUploading ? 'กำลังอัปโหลดรูป...' : 'บันทึกข้อมูล (Save)'}
                                     </button>
                                 </div>
                             </div>
@@ -443,10 +558,9 @@ export default function Settings() {
                                 e.preventDefault();
                                 if (!selectedDepositMember || depositCart.length === 0) return;
 
-                                // 🟢 เรียกใช้ฟังก์ชันสุดยอดจาก Context
                                 processDeposit(selectedDepositMember, depositCart, cartTotalMoney, cartTotalCarbon);
 
-                                alert(`✅ ยืนยันการรับฝากสำเร็จ!\n${selectedDepositMember.fullName} ได้รับเงิน ${cartTotalMoney} บาท`);
+                                alert(`ยืนยันการรับฝากสำเร็จ!\n${selectedDepositMember.fullName} ได้รับเงิน ${cartTotalMoney} บาท`);
 
                                 setDepositCart([]);
                                 setSelectedDepositMember(null);
@@ -465,7 +579,7 @@ export default function Settings() {
                                     <h2 className="font-['Fredoka_One'] text-xl text-[#1e1b4b]">รับฝากขยะ (ตะกร้า)</h2>
                                 </div>
 
-                                {/* ค้นหาชื่อสมาชิก (จำลองระบบ Debounce Search) */}
+                                {/* ค้นหาชื่อสมาชิก */}
                                 <div className="flex flex-col gap-1.5">
                                     <label className="font-bold text-xs text-[#475569]">ค้นหาชื่อผู้ฝาก (พิมพ์เพื่อค้นหา)</label>
                                     <div className="relative">
@@ -522,7 +636,12 @@ export default function Settings() {
                                     </div>
                                 </div>
 
-                                <button type="button" onClick={handleAddToCart} disabled={!selectedDepositMember || !currentDepositItem.weight} className="w-full bg-[#f8fafc] text-[#3b82f6] border border-[#3b82f6] hover:bg-[#eff6ff] font-bold text-sm py-3 rounded-xl transition-all mt-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <button
+                                    type="button"
+                                    onClick={handleAddToCart}
+                                    disabled={!selectedDepositMember || !currentDepositItem.weight}
+                                    className="w-full bg-[#f8fafc] text-[#3b82f6] border border-[#3b82f6] hover:bg-[#eff6ff] font-bold text-sm py-3 rounded-xl transition-all duration-200 mt-2 cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+                                >
                                     + เพิ่มลงรายการ
                                 </button>
                             </div>
@@ -562,7 +681,11 @@ export default function Settings() {
                                     </div>
                                 </div>
 
-                                <button type="submit" disabled={depositCart.length === 0} className="w-full bg-[#10b981] text-white font-bold text-sm py-4 rounded-xl hover:bg-[#059669] active:scale-[0.98] transition-all shadow-[0_4px_10px_rgba(16,185,129,0.3)] shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <button
+                                    type="submit"
+                                    disabled={depositCart.length === 0}
+                                    className="w-full bg-[#10b981] text-white font-bold text-sm py-4 rounded-xl hover:bg-[#059669] active:scale-[0.98] transition-all duration-200 shadow-[0_4px_10px_rgba(16,185,129,0.3)] shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+                                >
                                     ยืนยันการรับฝาก
                                 </button>
                             </div>

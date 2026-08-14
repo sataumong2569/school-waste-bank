@@ -322,9 +322,10 @@ export default function Members() {
                                                     />
                                                 )}
                                             </div>
+                                            {/* ปรับกระจก */}
 
                                             <div
-                                                className="absolute bottom-0 left-0 w-full h-[42%] z-10 pointer-events-none bg-gradient-to-t from-black/95 via-black/55 to-transparent backdrop-blur-[10px] rounded-b-[24px]"
+                                                className="absolute bottom-0 left-0 w-full h-[32%] z-10 pointer-events-none bg-gradient-to-t from-black/95 via-black/55 to-transparent backdrop-blur-[5px] rounded-b-[24px]"
                                             ></div>
 
                                             <div className="absolute top-3 right-3 z-20 flex items-center bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-sm">
@@ -341,39 +342,39 @@ export default function Members() {
                                                 {/* ➖ เส้นขีดคั่นบางๆ */}
                                                 <div className="w-full h-[1px] bg-white/20 my-2.5"></div>
 
-                                                {/* 🟢🟡🟣 สถิติ 3 ช่อง "แนวตั้ง" (จุดซ้าย - ข้อความขวา) */}
-                                                <div className="flex flex-col gap-2 text-xs font-['Nunito'] font-bold text-white/90">
+                                                {/* สถิติ 3 ช่อง */}
+                                                <div className="flex flex-col gap-2 font-['Nunito'] text-white/90">
 
                                                     {/* ยอดเงิน */}
                                                     <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-2.5 h-2.5 rounded-full bg-[#a855f7] shadow-[0_0_8px_#a855f7]"></div>
-                                                            <span className="text-white/80 text-[11px]">ยอดเงิน</span>
+                                                        <div className="flex items-center gap-2.5">
+                                                            <div className="w-2.5 h-2.5 rounded-full bg-[#a855f7]"></div>
+                                                            <span className="text-white/80 text-[13px] font-semibold">ยอดเงิน</span>
                                                         </div>
-                                                        <span className="font-['Fredoka_One'] text-white text-sm">
-                                                            {member.balance || 0} <span className="text-[10px] font-normal text-white/70">฿</span>
+                                                        <span className="font-bold text-white text-[13px]">
+                                                            {member.balance || 0} <span className="text-xs font-normal text-white/70">฿</span>
                                                         </span>
                                                     </div>
 
                                                     {/* ลดคาร์บอน */}
                                                     <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-2.5 h-2.5 rounded-full bg-[#34d399] shadow-[0_0_8px_#34d399]"></div>
-                                                            <span className="text-white/80 text-[11px]">ลดคาร์บอน</span>
+                                                        <div className="flex items-center gap-2.5">
+                                                            <div className="w-2.5 h-2.5 rounded-full bg-[#34d399]"></div>
+                                                            <span className="text-white/80 text-[13px] font-semibold">ลดคาร์บอน</span>
                                                         </div>
-                                                        <span className="font-['Fredoka_One'] text-white text-sm">
-                                                            {member.carbonPoints || 0} <span className="text-[10px] font-normal text-white/70"> kgCO₂e</span>
+                                                        <span className="font-bold text-white text-[13px]">
+                                                            {member.carbonPoints || 0} <span className="text-xs font-normal text-white/70">kgCO₂e</span>
                                                         </span>
                                                     </div>
 
                                                     {/* เครดิต */}
                                                     <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-2.5 h-2.5 rounded-full bg-[#fbbf24] shadow-[0_0_8px_#fbbf24]"></div>
-                                                            <span className="text-white/80 text-[11px]">เครดิต</span>
+                                                        <div className="flex items-center gap-2.5">
+                                                            <div className="w-2.5 h-2.5 rounded-full bg-[#fbbf24]"></div>
+                                                            <span className="text-white/80 text-[13px] font-semibold">เครดิต</span>
                                                         </div>
-                                                        <span className="font-['Fredoka_One'] text-white text-sm">
-                                                            {member.rewardPoints || 0} <span className="text-[10px] font-normal text-white/70">pts</span>
+                                                        <span className="font-bold text-white text-[13px]">
+                                                            {member.rewardPoints || 0} <span className="text-xs font-normal text-white/70">pts</span>
                                                         </span>
                                                     </div>
 

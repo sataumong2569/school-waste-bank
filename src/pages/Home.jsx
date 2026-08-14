@@ -9,6 +9,7 @@ import ReceiptBill from '../components/ReceiptBill'
 
 import { useApp } from '../AppContext';
 import { WASTE_CATEGORIES } from '../utils/wasteConfig';
+import HeartMemberGrid from '../components/HeartMemberGrid';
 
 export default function Home() {
     const [isLoading, setIsLoading] = useState(true);
@@ -206,98 +207,70 @@ export default function Home() {
                         )}
                     </div>
 
-                    {/* ข้อมูลสมาชิก & กราฟวงกลม */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div className="lg:col-span-2 fade-up" style={{ animationDelay: '0.2s' }}>
-                            <div className="clay-card p-6 md:p-8 relative h-full flex flex-col bg-white">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-2 h-7 bg-[#f59e0b] rounded-full"></div>
-                                    <h2 className="font-['Fredoka_One'] text-xl md:text-2xl text-[#1e1b4b]">สมาชิกใหม่ล่าสุด</h2>
-                                </div>
-                                <div className="flex flex-col gap-3 flex-1">
-                                    {isLoading ? (
-                                        Array.from({ length: 6 }).map((_, idx) => (
-                                            <div key={idx} className="flex justify-between items-center p-4 bg-[#f8f9fa] rounded-2xl animate-pulse">
-                                                <div className="flex items-center gap-4 w-full">
-                                                    <div className="w-10 h-10 rounded-full bg-gray-200"></div>
-                                                    <div className="flex flex-col gap-2 w-1/3">
-                                                        <div className="h-4 bg-gray-200 rounded w-full"></div>
-                                                        <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        newestMembers.length > 0 ? (
-                                            newestMembers.map((member, index) => (
-                                                <div key={member.id} className="flex justify-between items-center p-4 bg-[#f8f9fa] rounded-2xl shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] hover:bg-[#f0eeff] transition-colors cursor-default">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm md:text-base text-white ${member.color || 'bg-[#3b82f6]'}`}>
-                                                            {index + 1}
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-bold text-[#1e1b4b] font-['Nunito'] text-sm md:text-base">{member.fullName}</p>
-                                                            <p className="text-xs md:text-sm text-[#6d6a8a] font-semibold">ชั้น {member.grade}</p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="text-right flex flex-col items-end">
-                                                        <p className="font-['Fredoka_One'] text-[#7c3aed] text-xl">{member.balance}</p>
-                                                        <span className="text-[10px] md:text-xs font-bold text-[#6d6a8a] bg-white px-2 py-0.5 rounded-full shadow-sm mt-1">บาท</span>
-                                                    </div>
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <div className="py-8 text-center text-[#94a3b8] font-bold text-sm">ยังไม่มีสมาชิกในระบบ</div>
-                                        )
-                                    )}
-                                </div>
-                            </div>
+                    {/* ข้อมูลสมาชิก & กราฟวงกลม (ปรับเป็น 50:50 หรือ grid-cols-2) */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+
+                        {/* ฝั่งซ้าย: หัวใจ (เอา col-span-2 ออก เพื่อให้มันกว้างแค่ครึ่งเดียวพอดี) */}
+                        <div className="fade-up" style={{ animationDelay: '0.2s' }}>
+                            <HeartMemberGrid />
                         </div>
 
-                        <div className="lg:col-span-1 fade-up" style={{ animationDelay: '0.3s' }}>
-                            <div className="clay-card p-6 md:p-8 relative h-full flex flex-col items-center justify-start bg-white">
-                                <div className="flex items-center gap-3 w-full text-left mb-5">
+                        {/* ฝั่งขวา: กราฟวงกลม (ปรับเลย์เอาต์ใหม่ให้สมดุล 50:50) */}
+                        <div className="fade-up" style={{ animationDelay: '0.3s' }}>
+                            <div className="clay-card p-6 md:p-8 relative h-full flex flex-col items-center justify-start bg-white min-h-[450px]">
+
+                                {/* Header */}
+                                <div className="flex items-center gap-3 w-full text-left mb-6 shrink-0">
                                     <div className="w-2 h-7 bg-[#db2777] rounded-full"></div>
                                     <h2 className="font-['Fredoka_One'] text-xl md:text-2xl text-[#1e1b4b]">สัดส่วนขยะ</h2>
                                 </div>
-                                {isLoading ? (
-                                    <div className="w-56 h-56 md:w-64 md:h-64 rounded-full bg-gray-200 animate-pulse mb-6 relative flex-shrink-0 flex items-center justify-center">
-                                        <div className="absolute inset-[26px] md:inset-[30px] bg-white rounded-full"></div>
-                                    </div>
-                                ) : (
-                                    <div className="w-56 h-56 md:w-64 md:h-64 rounded-full clay-pie mb-6 relative flex-shrink-0" style={{ background: dashboardData.pieGradientString }}>
-                                        <div className="absolute inset-[26px] md:inset-[30px] bg-white rounded-full shadow-[inset_0_6px_12px_rgba(0,0,0,0.1)] flex items-center justify-center flex-col">
-                                            <span className="font-['Fredoka_One'] text-2xl text-[#1e1b4b]">{dashboardData.totalWasteWeight}</span>
-                                            <span className="text-[10px] font-bold text-[#64748b]">กก.</span>
-                                        </div>
-                                    </div>
-                                )}
-                                <div className="w-full flex flex-col gap-2 font-['Nunito'] font-bold text-sm md:text-base text-[#1e1b4b]">
+
+                                {/* จัดกลุ่ม กราฟ + ข้อมูล ให้อยู่ตรงกลาง */}
+                                <div className="flex flex-col items-center justify-center flex-1 w-full gap-8">
+
+                                    {/* กราฟวงกลม (ปรับขนาดให้กะทัดรัดขึ้นนิดนึง) */}
                                     {isLoading ? (
-                                        Array.from({ length: 4 }).map((_, idx) => (
-                                            <div key={idx} className="flex justify-between items-center px-3 py-2 animate-pulse">
-                                                <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-                                                <div className="h-5 bg-gray-200 rounded w-8"></div>
-                                            </div>
-                                        ))
+                                        <div className="w-48 h-48 md:w-56 md:h-56 rounded-full bg-gray-200 animate-pulse relative shrink-0 flex items-center justify-center shadow-sm">
+                                            <div className="absolute inset-[24px] md:inset-[28px] bg-white rounded-full"></div>
+                                        </div>
                                     ) : (
-                                        dashboardData.pieData.length > 0 ? (
-                                            dashboardData.pieData.map((data, idx) => (
-                                                <div key={idx}>
-                                                    <div className="flex justify-between items-center px-3 py-1.5 rounded-xl hover:bg-[#f0eeff] transition-colors">
-                                                        <div className="flex items-center gap-3">
-                                                            <span className={`w-4 h-4 ${data.colorClass} rounded-full shadow-inner`}></span>
-                                                            {data.label}
-                                                        </div>
-                                                        <span className="font-['Fredoka_One'] text-lg">{data.percent.toFixed(1)}%</span>
-                                                    </div>
-                                                    {idx !== dashboardData.pieData.length - 1 && <div className="h-[2px] bg-[#f0eeff] mx-2 rounded-full"></div>}
+                                        <div className="w-48 h-48 md:w-56 md:h-56 rounded-full clay-pie relative shrink-0 shadow-[0_10px_25px_rgba(0,0,0,0.05)] transition-transform duration-500 hover:scale-105" style={{ background: dashboardData.pieGradientString }}>
+                                            <div className="absolute inset-[24px] md:inset-[28px] bg-white rounded-full shadow-[inset_0_4px_10px_rgba(0,0,0,0.08)] flex items-center justify-center flex-col z-10">
+                                                <span className="font-['Fredoka_One'] text-3xl md:text-4xl text-[#1e1b4b]">{dashboardData.totalWasteWeight}</span>
+                                                <span className="text-[10px] md:text-xs font-bold text-[#64748b] mt-0.5">กิโลกรัม</span>
+                                            </div>
+                                            <div className="absolute inset-0 rounded-full shadow-[inset_0_0_20px_rgba(0,0,0,0.08)] pointer-events-none"></div>
+                                        </div>
+                                    )}
+
+                                    {/* รายการสัดส่วนขยะ  เปลี่ยนเป็น Grid 2 คอลัมน์ */}
+                                    <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 font-['Nunito'] font-bold">
+                                        {isLoading ? (
+                                            Array.from({ length: 6 }).map((_, idx) => (
+                                                <div key={idx} className="flex justify-between items-center p-3 animate-pulse bg-gray-50 rounded-xl border border-gray-100">
+                                                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                                    <div className="h-4 bg-gray-200 rounded w-8"></div>
                                                 </div>
                                             ))
                                         ) : (
-                                            <div className="text-center text-[#94a3b8] text-xs py-4">ยังไม่มีข้อมูลสัดส่วนขยะ</div>
-                                        )
-                                    )}
+                                            dashboardData.pieData.length > 0 ? (
+                                                dashboardData.pieData.map((data, idx) => (
+                                                    <div key={idx} className="flex justify-between items-center p-3 rounded-xl hover:bg-[#f8fafc] border border-transparent hover:border-[#e2e8f0] transition-all group bg-white shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
+                                                        <div className="flex items-center gap-2.5">
+                                                            <span className={`w-3 h-3 md:w-3.5 md:h-3.5 ${data.colorClass} rounded-full shadow-inner group-hover:scale-125 transition-transform`}></span>
+                                                            <span className="text-[#475569] text-xs md:text-sm group-hover:text-[#0f172a] transition-colors">{data.label}</span>
+                                                        </div>
+                                                        <span className="font-['Fredoka_One'] text-sm md:text-base text-[#1e1b4b]">{data.percent.toFixed(1)}%</span>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="col-span-1 sm:col-span-2 text-center text-[#94a3b8] text-xs py-6 bg-gray-50 rounded-xl border border-gray-100">
+                                                    ยังไม่มีข้อมูลสัดส่วนขยะ
+                                                </div>
+                                            )
+                                        )}
+                                    </div>
+
                                 </div>
                             </div>
                         </div>

@@ -16,7 +16,7 @@ export default function ReceiptBill({ category, shopName, date, items }) {
                 <div className="flex justify-between text-xs font-bold mb-4 uppercase">
                     <div>
                         <p>SHOP: {shopName}</p>
-                        <p>TEL.: 0123456789</p>
+                        <p>TEL.: 053-541407</p>
                         <p>DATE: {date}</p>
                     </div>
                     <div className="text-right">
