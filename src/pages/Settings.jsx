@@ -411,19 +411,50 @@ export default function Settings() {
                                         />
                                     </div>
 
-                                    {/* ชั้นเรียน & ชื่อเล่น */}
+                                    {/* --- ชั้นเรียน (แบบล็อคมาตรฐาน: เลือกระดับชั้น + ห้อง) & ชื่อเล่น --- */}
                                     <div className="grid grid-cols-2 gap-3">
                                         <div>
                                             <label className="block text-xs font-bold text-[#64748b] mb-1">ชั้นเรียน</label>
-                                            <input
-                                                type="text"
-                                                required
-                                                placeholder="เช่น ป.4/1"
-                                                value={formData.grade || ''}
-                                                onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
-                                                className={`w-full bg-[#f8fafc] border border-[#e2e8f0] px-3 py-2.5 rounded-xl text-xs font-bold text-[#0f172a] text-center outline-none transition-colors ${modalMode === 'add' ? 'focus:border-[#3b82f6]' : 'focus:border-[#ef4444]'} focus:bg-white placeholder:text-gray-400`}
-                                            />
+                                            <div className="grid grid-cols-2 gap-1.5">
+                                                {/* 1. เลือกระดับชั้น */}
+                                                <select
+                                                    value={formData.grade ? formData.grade.split('/')[0] : 'ป.1'}
+                                                    onChange={(e) => {
+                                                        const currentRoom = formData.grade && formData.grade.includes('/') ? formData.grade.split('/')[1] : '1';
+                                                        setFormData({ ...formData, grade: `${e.target.value}/${currentRoom}` });
+                                                    }}
+                                                    className={`w-full bg-[#f8fafc] border border-[#e2e8f0] px-2 py-2.5 rounded-xl text-xs font-bold text-[#0f172a] text-center outline-none transition-colors ${modalMode === 'add' ? 'focus:border-[#3b82f6]' : 'focus:border-[#ef4444]'
+                                                        } focus:bg-white cursor-pointer`}
+                                                >
+                                                    <option value="ป.1">ป.1</option>
+                                                    <option value="ป.2">ป.2</option>
+                                                    <option value="ป.3">ป.3</option>
+                                                    <option value="ป.4">ป.4</option>
+                                                    <option value="ป.5">ป.5</option>
+                                                    <option value="ป.6">ป.6</option>
+                                                </select>
+
+                                                {/* 2. เลือกห้องเรียน */}
+                                                <select
+                                                    value={formData.grade && formData.grade.includes('/') ? formData.grade.split('/')[1] : '1'}
+                                                    onChange={(e) => {
+                                                        const currentLevel = formData.grade ? formData.grade.split('/')[0] : 'ป.1';
+                                                        setFormData({ ...formData, grade: `${currentLevel}/${e.target.value}` });
+                                                    }}
+                                                    className={`w-full bg-[#f8fafc] border border-[#e2e8f0] px-2 py-2.5 rounded-xl text-xs font-bold text-[#0f172a] text-center outline-none transition-colors ${modalMode === 'add' ? 'focus:border-[#3b82f6]' : 'focus:border-[#ef4444]'
+                                                        } focus:bg-white cursor-pointer`}
+                                                >
+                                                    <option value="1">/1</option>
+                                                    <option value="2">/2</option>
+                                                    <option value="3">/3</option>
+                                                    <option value="4">/4</option>
+                                                    <option value="5">/5</option>
+                                                    <option value="6">/6</option>
+                                                </select>
+                                            </div>
                                         </div>
+
+                                        {/* ชื่อเล่น */}
                                         <div>
                                             <label className="block text-xs font-bold text-[#64748b] mb-1">ชื่อเล่น</label>
                                             <input
@@ -432,7 +463,8 @@ export default function Settings() {
                                                 placeholder="ชื่อเล่น"
                                                 value={formData.nickname || ''}
                                                 onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
-                                                className={`w-full bg-[#f8fafc] border border-[#e2e8f0] px-3 py-2.5 rounded-xl text-xs font-bold text-[#0f172a] text-center outline-none transition-colors ${modalMode === 'add' ? 'focus:border-[#3b82f6]' : 'focus:border-[#ef4444]'} focus:bg-white placeholder:text-gray-400`}
+                                                className={`w-full bg-[#f8fafc] border border-[#e2e8f0] px-3 py-2.5 rounded-xl text-xs font-bold text-[#0f172a] text-center outline-none transition-colors ${modalMode === 'add' ? 'focus:border-[#3b82f6]' : 'focus:border-[#ef4444]'
+                                                    } focus:bg-white placeholder:text-gray-400`}
                                             />
                                         </div>
                                     </div>

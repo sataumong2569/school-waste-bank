@@ -76,7 +76,7 @@ export default function Members() {
                         <span className="font-['Nunito'] font-bold text-[#1e1b4b] text-sm">ระบบสมาชิก</span>
                     </div>
 
-                    <h1 className="text-3xl md:text-5xl font-['Fredoka_One'] text-[#1e1b4b] tracking-wide mb-8">
+                    <h1 className="text-3xl md:text-5xl font-['Prompt'] text-[#1e1b4b] tracking-wide mb-8">
                         ค้นหาเพื่อน <span className="text-[#7c3aed]">รักษ์โลก</span>
                     </h1>
 
@@ -230,7 +230,7 @@ export default function Members() {
 
                         <div className="flex items-center gap-3 mb-6 px-2">
                             <div className="w-2 h-7 bg-[#f59e0b] rounded-full"></div>
-                            <h2 className="font-['Fredoka_One'] text-2xl text-[#1e1b4b]">ข้อมูลสมาชิก</h2>
+                            <h2 className="font-['Prompt'] text-2xl text-[#1e1b4b]">ข้อมูลสมาชิก</h2>
                         </div>
 
                         {displayedMembers.length > 0 ? (
@@ -257,7 +257,7 @@ export default function Members() {
                                             {/* ข้อมูลด้านขวา */}
                                             <div className="flex flex-col flex-1 overflow-hidden">
                                                 <div className="flex items-center justify-between mb-0.5">
-                                                    <p className="font-['Fredoka_One'] text-[#1e1b4b] text-base truncate">
+                                                    <p className="font-['Prompt'] text-[#1e1b4b] text-base truncate">
                                                         น้อง{member.nickname || member.fullName?.split(' ')[0]}
                                                     </p>
                                                     <span className="text-[10px] text-[#7c3aed] font-bold bg-[#f0eeff] px-2 py-0.5 rounded-md shrink-0">
@@ -444,7 +444,7 @@ export default function Members() {
                                 )}
                             </div>
 
-                            <h2 className="font-['Fredoka_One'] text-xl md:text-2xl text-[#1e1b4b] tracking-wide mb-1">
+                            <h2 className="font-['Prompt'] text-xl md:text-2xl text-[#1e1b4b] tracking-wide mb-1">
                                 {selectedMember.fullName}
                             </h2>
                             <p className="font-['Nunito'] font-bold text-xs md:text-sm text-[#6d6a8a]">
@@ -458,14 +458,14 @@ export default function Members() {
                         {/* 📊 ฝั่งขวา: ข้อมูลบัญชี สถิติ และประวัติ */}
                         <div className="w-full md:w-7/12 flex flex-col gap-5 justify-between">
                             <div className="flex flex-col gap-2.5">
-                                <h3 className="font-['Fredoka_One'] text-base text-[#1e1b4b] mb-1">ข้อมูลบัญชีและสถิติ</h3>
+                                <h3 className="font-['Prompt'] text-base text-[#1e1b4b] mb-1">ข้อมูลบัญชีและสถิติ</h3>
 
                                 <div className="bg-[#fafafa] rounded-xl px-4 py-3 flex items-center justify-between border border-[#f0f0f0]">
                                     <div className="flex items-center gap-2.5">
                                         <div className="w-2.5 h-2.5 rounded-full bg-[#7c3aed]"></div>
                                         <span className="font-['Nunito'] font-bold text-[#6d6a8a] text-xs md:text-sm">ยอดเงินสะสม</span>
                                     </div>
-                                    <span className="font-['Fredoka_One'] text-lg md:text-xl text-[#7c3aed]">
+                                    <span className="font-['Prompt'] text-lg md:text-xl text-[#7c3aed]">
                                         {selectedMember.balance || 0} <span className="text-xs font-['Nunito'] font-bold text-gray-500">บาท</span>
                                     </span>
                                 </div>
@@ -475,7 +475,7 @@ export default function Members() {
                                         <div className="w-2.5 h-2.5 rounded-full bg-[#10b981]"></div>
                                         <span className="font-['Nunito'] font-bold text-[#6d6a8a] text-xs md:text-sm">ลดคาร์บอน</span>
                                     </div>
-                                    <span className="font-['Fredoka_One'] text-lg md:text-xl text-[#10b981]">
+                                    <span className="font-['Prompt'] text-lg md:text-xl text-[#10b981]">
                                         {selectedMember.carbonPoints || 0} <span className="text-xs font-['Nunito'] font-bold text-gray-500">kgCO₂e</span>
                                     </span>
                                 </div>
@@ -485,7 +485,7 @@ export default function Members() {
                                         <div className="w-2.5 h-2.5 rounded-full bg-[#f59e0b]"></div>
                                         <span className="font-['Nunito'] font-bold text-[#d97706] text-xs md:text-sm">คาร์บอนเครดิต</span>
                                     </div>
-                                    <span className="font-['Fredoka_One'] text-lg md:text-xl text-[#f59e0b]">
+                                    <span className="font-['Prompt'] text-lg md:text-xl text-[#f59e0b]">
                                         {selectedMember.rewardPoints || 0} <span className="text-xs font-['Nunito'] font-bold text-[#d97706]">pts</span>
                                     </span>
                                 </div>
@@ -494,7 +494,7 @@ export default function Members() {
                             <div className="flex flex-col">
                                 <div className="flex items-center gap-2 mb-2">
                                     <ArrowUpTrayIcon className="w-4 h-4 text-[#1e1b4b] stroke-2" />
-                                    <h3 className="font-['Fredoka_One'] text-sm md:text-base text-[#1e1b4b]">ประวัติการฝากล่าสุด</h3>
+                                    <h3 className="font-['Prompt'] text-sm md:text-base text-[#1e1b4b]">ประวัติการฝากล่าสุด</h3>
                                 </div>
 
                                 <div className="flex flex-col gap-2 max-h-36 overflow-y-auto hide-scrollbar pr-1">

@@ -44,15 +44,10 @@ export default function HeartMemberGrid() {
                 <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                         {/*  เปลี่ยนแถบสีเป็นสีชมพูหัวใจ พร้อมออร่าเรืองแสง */}
-                        <div className="w-2 h-7 bg-[#ec4899] rounded-full shadow-[0_0_10px_rgba(236,72,153,0.6)]"></div>
+                        <div className="w-2 h-7 bg-[#ec4899] rounded-full "></div>
                         <h2 className="font-['Fredoka_One'] text-xl md:text-2xl text-[#1e1b4b]">ผู้ฝากขยะล่าสุด</h2>
                     </div>
 
-                    {/*  เปลี่ยนป้ายบอกจำนวนเป็นธีมสีชมพูให้เข้ากับแถบและไอคอน */}
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-[#ec4899] bg-[#fdf2f8] px-3 py-1.5 rounded-full border border-[#fbcfe8] shadow-sm">
-                        <HeartIcon className="w-4 h-4 animate-pulse" />
-                        <span>{Math.min(activeMembers.length, 70)} / 70</span>
-                    </div>
                 </div>
 
                 <p className="text-[11px] md:text-xs font-bold text-[#64748b] ml-5 mt-0.5">
