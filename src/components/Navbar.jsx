@@ -82,6 +82,8 @@ export default function Navbar() {
                     <img
                         src={umonglogo}
                         alt="Logo"
+                        width="200"
+                        height="200"
                         className="h-10 md:h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-105 drop-shadow-sm"
                     />
                     <span className="font-['Fredoka_One'] text-lg md:text-xl text-[#1e1b4b] hidden sm:block tracking-wide">

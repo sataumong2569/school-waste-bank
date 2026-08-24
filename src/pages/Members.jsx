@@ -173,41 +173,49 @@ export default function Members() {
                                         <div
                                             key={member.id}
                                             onClick={() => setSelectedMember(member)}
-                                            className="relative bg-white rounded-[20px] p-4 flex items-center gap-4 border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_20px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all cursor-pointer group"
+                                            className={`relative rounded-[20px] p-4 flex items-center gap-4 border transition-all cursor-pointer group hover:-translate-y-1 
+            ${rank === 1 ? 'bg-gradient-to-r from-[#fffbeb] to-white border-[#fde68a] shadow-[0_4px_15px_rgba(245,158,11,0.1)] hover:shadow-[0_8px_25px_rgba(245,158,11,0.2)]' :
+                                                    rank === 2 ? 'bg-gradient-to-r from-[#f8fafc] to-white border-[#e2e8f0] shadow-[0_4px_15px_rgba(148,163,184,0.1)] hover:shadow-[0_8px_25px_rgba(148,163,184,0.2)]' :
+                                                        rank === 3 ? 'bg-gradient-to-r from-[#fff7ed] to-white border-[#fed7aa] shadow-[0_4px_15px_rgba(234,88,12,0.1)] hover:shadow-[0_8px_25px_rgba(234,88,12,0.2)]' :
+                                                            'bg-white border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_20px_rgba(0,0,0,0.08)]'
+                                                }`}
                                         >
-                                            {/* 🏆 ป้าย (Badge) Top 3 แปะมุมการ์ด */}
-                                            {rank && (
-                                                <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2 z-20">
-                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-black text-xs shadow-lg border-2 border-white
-                                                        ${rank === 1 ? 'bg-gradient-to-br from-[#fde047] to-[#d97706]' :
-                                                            rank === 2 ? 'bg-gradient-to-br from-[#cbd5e1] to-[#64748b]' :
-                                                                'bg-gradient-to-br from-[#fdba74] to-[#ea580c]'}`}
-                                                    >
+                                            {/* ฝั่งซ้าย: รูปภาพ Profile พร้อมวงแหวนสำหรับ Top 3 */}
+                                            <div className={`relative w-16 h-16 md:w-20 md:h-20 rounded-full flex-shrink-0 flex items-center justify-center transition-all duration-300
+            ${rank === 1 ? 'p-1 bg-gradient-to-br from-[#fde047] via-[#f59e0b] to-[#d97706] shadow-[0_0_15px_rgba(245,158,11,0.4)] group-hover:shadow-[0_0_20px_rgba(245,158,11,0.6)]' :
+                                                    rank === 2 ? 'p-1 bg-gradient-to-br from-[#e2e8f0] via-[#94a3b8] to-[#475569] shadow-[0_0_15px_rgba(148,163,184,0.3)] group-hover:shadow-[0_0_20px_rgba(148,163,184,0.5)]' :
+                                                        rank === 3 ? 'p-1 bg-gradient-to-br from-[#fdba74] via-[#ea580c] to-[#c2410c] shadow-[0_0_15px_rgba(234,88,12,0.3)] group-hover:shadow-[0_0_20px_rgba(234,88,12,0.5)]' :
+                                                            'p-0'
+                                                }`}
+                                            >
+                                                {/* ไอคอนเหรียญแปะทับมุมล่างขวาของรูปโปรไฟล์ */}
+                                                {rank && (
+                                                    <div className="absolute -bottom-1 -right-1 w-6 h-6 md:w-7 md:h-7 bg-white rounded-full flex items-center justify-center shadow-md border border-gray-50 text-xs md:text-sm z-10">
                                                         {rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉'}
                                                     </div>
-                                                </div>
-                                            )}
-
-                                            {/* ฝั่งซ้าย: รูปภาพ Profile */}
-                                            <div className={`w-16 h-16 md:w-20 md:h-20 rounded-full flex-shrink-0 flex items-center justify-center text-white font-black text-2xl shadow-inner overflow-hidden border-2 border-white ${member.color || 'bg-[#7c3aed]'}`}>
-                                                {member.image ? (
-                                                    <img
-                                                        src={member.image}
-                                                        alt={member.fullName}
-                                                        loading="lazy"
-                                                        width="80"
-                                                        height="80"
-                                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                                    />
-                                                ) : (
-                                                    member.fullName?.split(' ')[1]?.[0] || 'U'
                                                 )}
+
+                                                {/* ตัวรูปโปรไฟล์ */}
+                                                <div className={`w-full h-full rounded-full flex items-center justify-center text-white font-black text-xl md:text-2xl shadow-inner overflow-hidden border-2 border-white ${member.color || 'bg-[#7c3aed]'}`}>
+                                                    {member.image ? (
+                                                        <img
+                                                            src={member.image}
+                                                            alt={member.fullName}
+                                                            loading="lazy"
+                                                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                                        />
+                                                    ) : (
+                                                        member.fullName?.split(' ')[1]?.[0] || 'U'
+                                                    )}
+                                                </div>
                                             </div>
 
                                             {/* ฝั่งขวา: ข้อมูล และ แท็ก */}
                                             <div className="flex flex-col flex-1 overflow-hidden justify-center">
                                                 <div className="flex flex-wrap items-center gap-2 mb-1">
-                                                    <p className="font-['Prompt'] text-gray-900 text-base md:text-lg font-bold truncate">
+                                                    <p className={`font-['Prompt'] text-base md:text-lg font-bold truncate
+                    ${rank === 1 ? 'text-[#d97706]' : rank === 2 ? 'text-[#475569]' : rank === 3 ? 'text-[#c2410c]' : 'text-gray-900'}
+                `}>
                                                         น้อง{member.nickname || member.fullName?.split(' ')[0]}
                                                     </p>
                                                     <span className="text-[10px] md:text-[11px] text-[#6d6a8a] font-bold">
