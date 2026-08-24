@@ -5,6 +5,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 import { useApp } from '../AppContext';
+import { getOptimizedImageUrl } from '../utils/uploadImage';
 
 export default function Members() {
 
@@ -199,10 +200,12 @@ export default function Members() {
                                                 <div className={`w-full h-full rounded-full flex items-center justify-center text-white font-black text-xl md:text-2xl shadow-inner overflow-hidden border-2 border-white ${member.color || 'bg-[#7c3aed]'}`}>
                                                     {member.image ? (
                                                         <img
-                                                            src={member.image}
-                                                            alt={member.fullName}
+                                                            src={getOptimizedImageUrl(member.image, 100)}
+                                                            alt="Profile"
                                                             loading="lazy"
-                                                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                                            width="100"
+                                                            height="100"
+                                                            className="w-full h-full object-cover"
                                                         />
                                                     ) : (
                                                         member.fullName?.split(' ')[1]?.[0] || 'U'
@@ -290,7 +293,14 @@ export default function Members() {
                         <div className="w-full md:w-5/12 flex flex-col items-center md:items-start">
                             <div className="w-full h-64 md:h-80 rounded-[24px] overflow-hidden shadow-sm bg-[#f1f5f9] mb-4 flex items-center justify-center border border-gray-100">
                                 {selectedMember.image ? (
-                                    <img src={selectedMember.image} alt="Profile" className="w-full h-full object-cover" />
+                                    <img
+                                        src={getOptimizedImageUrl(selectedMember.image, 100)}
+                                        alt="Profile"
+                                        loading="lazy"
+                                        width="100"
+                                        height="100"
+                                        className="w-full h-full object-cover"
+                                    />
                                 ) : (
                                     <div className={`w-full h-full flex items-center justify-center font-black text-6xl text-white ${selectedMember.color || 'bg-[#7c3aed]'}`}>
                                         {selectedMember.fullName?.split(' ')[1]?.[0] || 'U'}

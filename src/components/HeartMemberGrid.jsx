@@ -1,6 +1,7 @@
 import React from 'react';
 import { HeartIcon, } from '@heroicons/react/24/outline';
 import { useApp } from '../AppContext';
+import { getOptimizedImageUrl } from '../utils/uploadImage';
 
 const heartCoordinates = [
     // แถว 1
@@ -78,7 +79,14 @@ export default function HeartMemberGrid() {
                                 {member ? (
                                     <div className="w-full h-full rounded-md sm:rounded-lg overflow-hidden shadow-[0_2px_6px_rgba(0,0,0,0.1)] cursor-pointer transition-all duration-300 group-hover:scale-150 group-hover:z-20 group-hover:shadow-2xl group-hover:ring-2 group-hover:ring-[#10b981]">
                                         {member.image ? (
-                                            <img src={member.image} alt={member.fullName} className="w-full h-full object-cover" />
+                                            <img
+                                                src={getOptimizedImageUrl(member.image, 100)}
+                                                alt="Profile"
+                                                loading="lazy"
+                                                width="100"
+                                                height="100"
+                                                className="w-full h-full object-cover"
+                                            />
                                         ) : (
                                             <div className={`w-full h-full flex items-center justify-center text-white font-black text-[10px] sm:text-xs md:text-sm ${member.color || 'bg-[#10b981]'}`}>
                                                 {member.fullName.split(' ')[1]?.[0] || 'U'}

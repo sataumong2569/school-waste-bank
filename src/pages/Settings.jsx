@@ -12,6 +12,7 @@ import { WASTE_CATEGORIES, DEFAULT_PRICES } from '../utils/wasteConfig';
 import { useApp } from '../AppContext';
 import { uploadImageToCloudinary } from '../utils/uploadImage';
 import { getCroppedImg } from '../utils/cropImage';
+import { getOptimizedImageUrl } from '../utils/uploadImage';
 
 export default function Settings() {
 
@@ -272,7 +273,14 @@ export default function Settings() {
                                     <div className="flex items-center gap-3 flex-1 overflow-hidden">
                                         <div className={`w-9 h-9 md:w-8 md:h-8 rounded-full ${member.color} flex items-center justify-center text-white font-black text-xs shrink-0 overflow-hidden`}>
                                             {member.image ? (
-                                                <img src={member.image} alt="Profile" className="w-full h-full object-cover" />
+                                                <img
+                                                    src={getOptimizedImageUrl(member.image, 100)}
+                                                    alt="Profile"
+                                                    loading="lazy"
+                                                    width="100"
+                                                    height="100"
+                                                    className="w-full h-full object-cover"
+                                                />
                                             ) : (
                                                 <span>{member.fullName.split(' ')[1]?.[0] || 'U'}</span>
                                             )}
@@ -399,7 +407,14 @@ export default function Settings() {
                                                 onClick={triggerFileInput}
                                                 className="relative group w-full h-48 md:h-56 rounded-xl overflow-hidden cursor-pointer shadow-sm border-2 border-transparent hover:border-[#3b82f6] transition-all"
                                             >
-                                                <img src={formData.image} alt="Profile" className="w-full h-full object-cover" />
+                                                <img
+                                                    src={getOptimizedImageUrl(formData.image, 100)}
+                                                    alt="Profile"
+                                                    loading="lazy"
+                                                    width="100"
+                                                    height="100"
+                                                    className="w-full h-full object-cover"
+                                                />
                                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                                     <div className="text-white flex flex-col items-center gap-1">
                                                         <CameraIcon className="w-8 h-8" />
