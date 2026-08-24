@@ -22,7 +22,7 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: '/umong1weblogo_180.png',
+            src: '/school1weblogo_180.png',
             sizes: '180x180',
             type: 'image/png'
           },
