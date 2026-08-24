@@ -14,7 +14,8 @@ import HeartMemberGrid from '../components/HeartMemberGrid';
 export default function Home() {
     const [isLoading, setIsLoading] = useState(true);
 
-    const { members, pricing, sysStats, priceUpdatedAt } = useApp();
+    // ดึงเฉพาะข้อมูลสถิติรวม ไม่ดึง members มาให้หนักเครื่อง
+    const { pricing, sysStats, priceUpdatedAt } = useApp();
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -25,56 +26,28 @@ export default function Home() {
 
     // ระบบคำนวณสัดส่วนขยะ (กราฟวงกลมและกราฟแท่ง)
     const dashboardData = useMemo(() => {
-        let totalWasteWeight = 0;
-        const categoryTotals = {};
-        const itemTotals = {};
+        // ใช้ข้อมูลจากบิลรวม (sysStats) แทนการวนลูปจากนักเรียน
+        const totalWasteWeight = sysStats?.totalWeight || 0;
+        const categoryTotals = sysStats?.categories || {};
+        const itemTotals = sysStats?.items || {};
 
-        // 1. สร้างค่าเริ่มต้นเป็น 0
-        Object.entries(WASTE_CATEGORIES).forEach(([catKey, catVal]) => {
-            categoryTotals[catKey] = 0;
-            catVal.items.forEach(item => {
-                itemTotals[item] = 0;
-            });
-        });
-
-        // 2. คำนวณข้อมูลขยะ
-        members.forEach(m => {
-            if (m.history && Array.isArray(m.history)) {
-                m.history.forEach(h => {
-                    const weight = parseFloat(h.weight) || 0;
-                    totalWasteWeight += weight;
-
-                    if (itemTotals[h.type] !== undefined) {
-                        itemTotals[h.type] += weight;
-                    }
-
-                    for (const [catKey, catVal] of Object.entries(WASTE_CATEGORIES)) {
-                        if (catVal.items.includes(h.type)) {
-                            categoryTotals[catKey] += weight;
-                            break;
-                        }
-                    }
-                });
-            }
-        });
-
-        // 3. หาหมวดหมู่ที่ถูกฝากเยอะที่สุด
+        // 1. หาหมวดหมู่ที่ถูกฝากเยอะที่สุด
         let topCategoryName = '-';
         let maxCatWeight = 0;
         for (const [catKey, weight] of Object.entries(categoryTotals)) {
             if (weight > maxCatWeight) {
                 maxCatWeight = weight;
-                topCategoryName = WASTE_CATEGORIES[catKey].label;
+                topCategoryName = WASTE_CATEGORIES[catKey]?.label || '-';
             }
         }
         if (maxCatWeight === 0) topCategoryName = '-';
 
-        // 4. สร้างข้อมูลกราฟวงกลม
+        // 2. สร้างข้อมูลกราฟวงกลม
         const pieData = [];
         let cumulativePercent = 0;
         let pieConicGradient = [];
 
-        const allCatKeys = Object.keys(categoryTotals);
+        const allCatKeys = Object.keys(WASTE_CATEGORIES);
 
         if (totalWasteWeight === 0) {
             pieConicGradient.push(`#e2e8f0 0% 100%`);
@@ -83,7 +56,8 @@ export default function Home() {
             });
         } else {
             allCatKeys.forEach(key => {
-                const percent = (categoryTotals[key] / totalWasteWeight) * 100;
+                const weight = categoryTotals[key] || 0;
+                const percent = (weight / totalWasteWeight) * 100;
                 const hexColor = WASTE_CATEGORIES[key].color.match(/#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})/)?.[0] || '#ccc';
 
                 pieData.push({ label: WASTE_CATEGORIES[key].label, percent: percent, colorClass: WASTE_CATEGORIES[key].color });
@@ -95,7 +69,7 @@ export default function Home() {
             });
         }
 
-        // 5. สร้างข้อมูลกราฟแนวนอน
+        // 3. สร้างข้อมูลกราฟแนวนอน/แนวตั้ง
         const detailedWaste = Object.keys(itemTotals).map(itemName => {
             let colorClass = 'bg-gray-400';
             for (const catVal of Object.values(WASTE_CATEGORIES)) {
@@ -114,9 +88,7 @@ export default function Home() {
             pieGradientString: pieConicGradient.length > 0 ? `conic-gradient(${pieConicGradient.join(', ')})` : `conic-gradient(#e2e8f0 0% 100%)`,
             detailedWaste
         };
-    }, [members]);
-
-    const newestMembers = [...members].reverse().slice(0, 6);
+    }, [sysStats]); // เปลี่ยน dependencies เป็นการพึ่งพาแค่ sysStats
 
     const stats = [
         { title: 'ประเภทขยะมากที่สุด', value: dashboardData.topCategoryName, unit: '', icon: StarIcon, clayClass: 'clay-card-pink' },
@@ -126,14 +98,8 @@ export default function Home() {
         { title: 'ลดการปล่อยคาร์บอน', value: (sysStats?.totalCarbon || 0).toLocaleString(undefined, { maximumFractionDigits: 2 }), unit: 'kgCO₂e', icon: GlobeAsiaAustraliaIcon, clayClass: 'clay-card-purple' },
     ];
 
-    const maxWasteValue = dashboardData.detailedWaste.length > 0 ? Math.max(...dashboardData.detailedWaste.map(item => item.value)) : 1;
-
     const [activeReceiptTab, setActiveReceiptTab] = useState('PL');
-
-    const [desktopOpenCats, setDesktopOpenCats] = useState({ PL: false, P: false, ETC: false });
-    const [selectedMobileCat, setSelectedMobileCat] = useState(null);
-
-    const [selectedCategoryKey, setSelectedCategoryKey] = useState(null); // null = โหมดปกติ 3 แท่ง, 'PL'/'P'/'ETC' = โหมดขยายแท่งย่อย
+    const [selectedCategoryKey, setSelectedCategoryKey] = useState(null);
 
     return (
         <div className="w-full overflow-hidden font-['Prompt']">
@@ -179,66 +145,31 @@ export default function Home() {
                         </div>
                     </div>
 
-                    {/* กล่องสถิติ 5 กล่อง */}
-                    {/* 1. สำหรับมือถือ: เลื่อนปัดแนวนอน */}
-                    <div className="flex md:hidden overflow-x-auto gap-3 pb-4 mb-8 snap-x snap-mandatory scrollbar-none -mx-4 px-4">
+                    <div className="flex overflow-x-auto md:grid md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6 pb-4 md:pb-0 mb-8 md:mb-12 snap-x snap-mandatory hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
                         {isLoading ? (
                             Array.from({ length: 5 }).map((_, idx) => (
-                                <div key={idx} className="min-w-[200px] w-[210px] flex-shrink-0 bg-white/50 rounded-[24px] p-5 h-32 flex flex-col justify-between animate-pulse border border-white/60">
-                                    <div className="w-10 h-10 bg-gray-200/60 rounded-[12px]"></div>
+                                <div key={idx} className="min-w-[210px] w-full bg-white/50 backdrop-blur-sm rounded-[24px] p-5 h-36 flex flex-col justify-between animate-pulse shadow-[inset_0_2px_10px_rgba(255,255,255,0.5)] border border-white/60 snap-center md:snap-align-none">
+                                    <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-200/60 rounded-[12px]"></div>
                                     <div>
                                         <div className="w-20 h-3 bg-gray-200/60 rounded-full mb-2"></div>
-                                        <div className="w-14 h-6 bg-gray-300/60 rounded-full"></div>
+                                        <div className="w-14 h-6 md:w-16 md:h-8 bg-gray-300/60 rounded-full"></div>
                                     </div>
                                 </div>
                             ))
                         ) : (
                             stats.map((stat, index) => (
-                                <div
-                                    key={index}
-                                    className={`${stat.clayClass} min-w-[200px] w-[210px] flex-shrink-0 p-5 flex flex-col justify-between snap-start rounded-[24px] shadow-sm`}
-                                >
-                                    <div className="flex justify-between items-start">
-                                        <div className="p-2.5 bg-white/20 rounded-[12px] shadow-[inset_0_2px_6px_rgba(255,255,255,0.4)]">
-                                            <stat.icon className="w-6 h-6 text-white" />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <p className="font-['Prompt'] font-semibold text-white/90 text-xs mt-1">{stat.title}</p>
-                                        <div className="flex items-baseline gap-1 mt-0.5">
-                                            <span className="font-['Fredoka_One'] text-2xl text-white tracking-wide">{stat.value}</span>
-                                            <span className="font-['Prompt'] font-medium text-[11px] text-white/80">{stat.unit}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
-
-                    {/* 2. สำหรับแท็บเล็ตและเดสก์ท็อป: Grid 5 ช่อง */}
-                    <div className="hidden md:grid md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6 mb-12">
-                        {isLoading ? (
-                            Array.from({ length: 5 }).map((_, idx) => (
-                                <div key={idx} className="bg-white/50 backdrop-blur-sm rounded-[24px] p-5 md:p-6 h-36 flex flex-col justify-between animate-pulse shadow-[inset_0_2px_10px_rgba(255,255,255,0.5)] border border-white/60">
-                                    <div className="w-12 h-12 bg-gray-200/60 rounded-[14px]"></div>
-                                    <div>
-                                        <div className="w-20 h-3 bg-gray-200/60 rounded-full mb-2"></div>
-                                        <div className="w-16 h-8 bg-gray-300/60 rounded-full"></div>
-                                    </div>
-                                </div>
-                            ))
-                        ) : (
-                            stats.map((stat, index) => (
-                                <div key={index} className={`${stat.clayClass} p-5 md:p-6 flex flex-col fade-up hover-bouncy cursor-pointer`} style={{ animationDelay: `${index * 0.03}s` }}>
+                                <div key={index} className={`${stat.clayClass} min-w-[210px] w-full p-5 md:p-6 flex flex-col justify-between snap-center md:snap-align-none fade-up hover-bouncy cursor-pointer rounded-[24px]`} style={{ animationDelay: `${index * 0.03}s` }}>
                                     <div className="flex justify-between items-start mb-3">
-                                        <div className="p-3 bg-white/20 rounded-[14px] shadow-[inset_0_2px_6px_rgba(255,255,255,0.4)]">
-                                            <stat.icon className="w-7 h-7 text-white" />
+                                        <div className="p-2.5 md:p-3 bg-white/20 rounded-[12px] md:rounded-[14px] shadow-[inset_0_2px_6px_rgba(255,255,255,0.4)]">
+                                            <stat.icon className="w-6 h-6 md:w-7 md:h-7 text-white" />
                                         </div>
                                     </div>
-                                    <p className="font-['Prompt'] font-semibold text-white/90 text-[13px] md:text-sm mt-2">{stat.title}</p>
-                                    <div className="flex items-baseline gap-1 mt-1">
-                                        <span className="font-['Fredoka_One'] text-3xl md:text-4xl text-white tracking-wide">{stat.value}</span>
-                                        <span className="font-['Prompt'] font-medium text-xs md:text-sm text-white/80">{stat.unit}</span>
+                                    <div>
+                                        <p className="font-['Prompt'] font-semibold text-white/90 text-xs md:text-sm mt-1 md:mt-2">{stat.title}</p>
+                                        <div className="flex items-baseline gap-1 mt-0.5 md:mt-1">
+                                            <span className="font-['Fredoka_One'] text-2xl md:text-4xl text-white tracking-wide">{stat.value}</span>
+                                            <span className="font-['Prompt'] font-medium text-[11px] md:text-sm text-white/80">{stat.unit}</span>
+                                        </div>
                                     </div>
                                 </div>
                             ))
@@ -253,17 +184,17 @@ export default function Home() {
                             <HeartMemberGrid />
                         </div>
 
-                        {/* ฝั่งขวา: กราฟวงกลม (ปรับแต่งเฉพาะ Desktop ให้ใหญ่ หนา และรายการขยะชิดล่าง) */}
+                        {/* ฝั่งขวา: กราฟวงกลม */}
                         <div className="fade-up" style={{ animationDelay: '0.3s' }}>
                             <div className="clay-card p-5 md:p-8 relative h-full flex flex-col items-center justify-between bg-white min-h-[500px]">
 
                                 {/* Header */}
                                 <div className="flex items-center gap-3 w-full text-left shrink-0">
-                                    <div className="w-2 h-7 bg-[yellow] rounded-full"></div>
+                                    <div className="w-2 h-7 bg-[#fcd34d] rounded-full"></div>
                                     <h2 className="font-['Fredoka_One'] text-xl md:text-2xl text-[#1e1b4b]">สัดส่วนขยะ</h2>
                                 </div>
 
-                                {/* กราฟวงกลม (ใหญ่และหนาขึ้นเฉพาะบน Desktop) */}
+                                {/* กราฟวงกลม */}
                                 <div className="flex items-center justify-center my-auto shrink-0 py-2">
                                     {isLoading ? (
                                         <div className="w-36 h-36 md:w-60 md:h-60 rounded-full bg-gray-200 animate-pulse relative shrink-0 flex items-center justify-center shadow-sm">
@@ -271,9 +202,8 @@ export default function Home() {
                                         </div>
                                     ) : (
                                         <div className="w-36 h-36 md:w-60 md:h-60 rounded-full clay-pie relative shrink-0 shadow-[0_10px_25px_rgba(0,0,0,0.06)] transition-transform duration-300 hover:scale-105" style={{ background: dashboardData.pieGradientString }}>
-                                            {/* ขยายความหนาของวงแหวนด้วยการลดขนาดขอบเขตวงกลมด้านในลง (md:inset-[16px]) */}
                                             <div className="absolute inset-[18px] md:inset-[20px] bg-white rounded-full shadow-[inset_0_4px_10px_rgba(0,0,0,0.08)] flex items-center justify-center flex-col z-10">
-                                                <span className="font-['Fredoka_One'] text-2xl md:text-4xl text-[#1e1b4b] leading-none">{dashboardData.totalWasteWeight}</span>
+                                                <span className="font-['Fredoka_One'] text-2xl md:text-4xl text-[#1e1b4b] leading-none">{dashboardData.totalWasteWeight.toLocaleString(undefined, { maximumFractionDigits: 1 })}</span>
                                                 <span className="text-[10px] md:text-xs font-['Prompt'] font-medium text-[#64748b] mt-1">กิโลกรัม</span>
                                             </div>
                                             <div className="absolute inset-0 rounded-full shadow-[inset_0_0_20px_rgba(0,0,0,0.08)] pointer-events-none"></div>
@@ -281,7 +211,7 @@ export default function Home() {
                                     )}
                                 </div>
 
-                                {/* รายการสัดส่วนขยะ (ถูกดันมาชิดขอบล่างด้วย justify-between ของการ์ดหลัก) */}
+                                {/* รายการสัดส่วนขยะ */}
                                 <div className="w-full grid grid-cols-2 gap-2 md:gap-2.5 font-['Prompt'] shrink-0">
                                     {isLoading ? (
                                         Array.from({ length: 6 }).map((_, idx) => (
@@ -334,7 +264,7 @@ export default function Home() {
                         </p>
                     </div>
 
-                    {/*  สำหรับมือถือ: ทำเป็นปุ่ม Tab สลับดูทีละบิล (แก้ปัญหายืดยาว) */}
+                    {/* แท็บสลับบนมือถือ */}
                     <div className="flex md:hidden justify-center gap-2 mb-6">
                         <button
                             onClick={() => setActiveReceiptTab('PL')}
@@ -356,54 +286,36 @@ export default function Home() {
                         </button>
                     </div>
 
-                    {/*  แสดงผลบนมือถือ: โชว์เฉพาะบิลที่กดเลือกจากแท็บ */}
-                    <div className="flex md:hidden justify-center">
-                        <div className="w-full max-w-sm">
-                            {activeReceiptTab === 'PL' && (
-                                <ReceiptBill category="PL" shopName="SchoolWaste" date="ล่าสุด" items={[
-                                    { name: "พลาสติกรวม", price: pricing["พลาสติกรวม"]?.toFixed(2) || "0.00" },
-                                    { name: "ขวดน้ำขุ่น", price: pricing["ขวดน้ำขุ่น"]?.toFixed(2) || "0.00" },
-                                    { name: "ขวดน้ำใส", price: pricing["ขวดน้ำใส"]?.toFixed(2) || "0.00" },
-                                    { name: "ขวดน้ำ PET สี", price: pricing["ขวดน้ำ PET สี"]?.toFixed(2) || "0.00" }
-                                ]} />
-                            )}
-                            {activeReceiptTab === 'P' && (
-                                <ReceiptBill category="P" shopName="SchoolWaste" date="ล่าสุด" items={[
-                                    { name: "กระดาษขาวดำ", price: pricing["กระดาษขาวดำ"]?.toFixed(2) || "0.00" },
-                                    { name: "กระดาษสีรวม", price: pricing["กระดาษสีรวม"]?.toFixed(2) || "0.00" },
-                                    { name: "กระดาษลัง", price: pricing["กระดาษลัง"]?.toFixed(2) || "0.00" }
-                                ]} />
-                            )}
-                            {activeReceiptTab === 'ETC' && (
-                                <ReceiptBill category="ETC" shopName="SchoolWaste" date="ล่าสุด" items={[
-                                    { name: "กระป๋องกาแฟ/นม", price: pricing["กระป๋องกาแฟ/นม"]?.toFixed(2) || "0.00" },
-                                    { name: "เหล็กหนา", price: pricing["เหล็กหนา"]?.toFixed(2) || "0.00" },
-                                    { name: "เหล็กบาง", price: pricing["เหล็กบาง"]?.toFixed(2) || "0.00" },
-                                    { name: "สังกะสี", price: pricing["สังกะสี"]?.toFixed(2) || "0.00" }
-                                ]} />
-                            )}
+                    {/* บิลแบบย่อ (ใช้ CSS hidden md:block ซ่อนแสดงตามจอ) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
+                        {/* บิล 1: พลาสติก */}
+                        <div className={`${activeReceiptTab === 'PL' ? 'block' : 'hidden'} md:block w-full max-w-sm md:max-w-none mx-auto`}>
+                            <ReceiptBill category="PL" shopName="SchoolWaste" date="ล่าสุด" items={[
+                                { name: "พลาสติกรวม", price: pricing["พลาสติกรวม"]?.toFixed(2) || "0.00" },
+                                { name: "ขวดน้ำขุ่น", price: pricing["ขวดน้ำขุ่น"]?.toFixed(2) || "0.00" },
+                                { name: "ขวดน้ำใส", price: pricing["ขวดน้ำใส"]?.toFixed(2) || "0.00" },
+                                { name: "ขวดน้ำ PET สี", price: pricing["ขวดน้ำ PET สี"]?.toFixed(2) || "0.00" }
+                            ]} />
                         </div>
-                    </div>
 
-                    {/*  แสดงผลบนคอมพิวเตอร์/Tablet: โชว์ 3 บิลเรียงกัน*/}
-                    <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
-                        <ReceiptBill category="PL" shopName="SchoolWaste" date="ล่าสุด" items={[
-                            { name: "พลาสติกรวม", price: pricing["พลาสติกรวม"]?.toFixed(2) || "0.00" },
-                            { name: "ขวดน้ำขุ่น", price: pricing["ขวดน้ำขุ่น"]?.toFixed(2) || "0.00" },
-                            { name: "ขวดน้ำใส", price: pricing["ขวดน้ำใส"]?.toFixed(2) || "0.00" },
-                            { name: "ขวดน้ำ PET สี", price: pricing["ขวดน้ำ PET สี"]?.toFixed(2) || "0.00" }
-                        ]} />
-                        <ReceiptBill category="P" shopName="SchoolWaste" date="ล่าสุด" items={[
-                            { name: "กระดาษขาวดำ", price: pricing["กระดาษขาวดำ"]?.toFixed(2) || "0.00" },
-                            { name: "กระดาษสีรวม", price: pricing["กระดาษสีรวม"]?.toFixed(2) || "0.00" },
-                            { name: "กระดาษลัง", price: pricing["กระดาษลัง"]?.toFixed(2) || "0.00" }
-                        ]} />
-                        <ReceiptBill category="ETC" shopName="SchoolWaste" date="ล่าสุด" items={[
-                            { name: "กระป๋องกาแฟ/นม", price: pricing["กระป๋องกาแฟ/นม"]?.toFixed(2) || "0.00" },
-                            { name: "เหล็กหนา", price: pricing["เหล็กหนา"]?.toFixed(2) || "0.00" },
-                            { name: "เหล็กบาง", price: pricing["เหล็กบาง"]?.toFixed(2) || "0.00" },
-                            { name: "สังกะสี", price: pricing["สังกะสี"]?.toFixed(2) || "0.00" }
-                        ]} />
+                        {/* บิล 2: กระดาษ */}
+                        <div className={`${activeReceiptTab === 'P' ? 'block' : 'hidden'} md:block w-full max-w-sm md:max-w-none mx-auto`}>
+                            <ReceiptBill category="P" shopName="SchoolWaste" date="ล่าสุด" items={[
+                                { name: "กระดาษขาวดำ", price: pricing["กระดาษขาวดำ"]?.toFixed(2) || "0.00" },
+                                { name: "กระดาษสีรวม", price: pricing["กระดาษสีรวม"]?.toFixed(2) || "0.00" },
+                                { name: "กระดาษลัง", price: pricing["กระดาษลัง"]?.toFixed(2) || "0.00" }
+                            ]} />
+                        </div>
+
+                        {/* บิล 3: เบ็ดเตล็ด */}
+                        <div className={`${activeReceiptTab === 'ETC' ? 'block' : 'hidden'} md:block w-full max-w-sm md:max-w-none mx-auto`}>
+                            <ReceiptBill category="ETC" shopName="SchoolWaste" date="ล่าสุด" items={[
+                                { name: "กระป๋องกาแฟ/นม", price: pricing["กระป๋องกาแฟ/นม"]?.toFixed(2) || "0.00" },
+                                { name: "เหล็กหนา", price: pricing["เหล็กหนา"]?.toFixed(2) || "0.00" },
+                                { name: "เหล็กบาง", price: pricing["เหล็กบาง"]?.toFixed(2) || "0.00" },
+                                { name: "สังกะสี", price: pricing["สังกะสี"]?.toFixed(2) || "0.00" }
+                            ]} />
+                        </div>
                     </div>
 
                 </div>
@@ -414,7 +326,7 @@ export default function Home() {
             </svg>
 
             {/* ========================================================================= */}
-            {/* SECTION 3: กราฟแท่งแนวตั้งแปลงร่างแบบ Inline (Morphing Vertical Bar Chart) */}
+            {/* SECTION 3: กราฟแท่งแนวตั้งแปลงร่างแบบ Inline */}
             {/* ========================================================================= */}
             <div className="w-full bg-[#fff7ed] pt-10 pb-24 font-['Prompt']">
                 <div className="max-w-7xl mx-auto px-6 md:px-8 fade-up" style={{ animationDelay: '0.3s' }}>
@@ -434,7 +346,7 @@ export default function Home() {
                         </div>
 
                         {(() => {
-                            // จัดเตรียมข้อมูล 3 หมวดหมู่หลัก (พลาสติก, กระดาษ, อื่นๆ)
+                            // จัดเตรียมข้อมูล 3 หมวดหมู่หลัก
                             const categoryList = Object.entries(WASTE_CATEGORIES).map(([catKey, catVal]) => {
                                 const subItems = dashboardData.detailedWaste.filter(item => catVal.items.includes(item.name));
                                 const totalWeight = subItems.reduce((sum, item) => sum + item.value, 0);
@@ -455,7 +367,7 @@ export default function Home() {
 
                             return (
                                 <div className="w-full">
-                                    {/* พื้นที่แสดงกราฟแท่งแนวตั้ง (ฐานวางระนาบเดียวกัน) */}
+                                    {/* พื้นที่แสดงกราฟแท่งแนวตั้ง */}
                                     <div className="w-full h-[320px] md:h-[380px] flex items-end justify-center gap-3 sm:gap-6 md:gap-8 pb-8 pt-12 border-b-2 border-slate-100 overflow-x-auto overflow-y-visible px-4">
 
                                         {/* วนลูป 3 หมวดหลัก */}
@@ -463,7 +375,7 @@ export default function Home() {
                                             const isSelected = selectedCategoryKey === cat.key;
                                             const isHidden = selectedCategoryKey !== null && !isSelected;
 
-                                            // คำนวณความสูงแท่งหลัก (ความสูงขั้นต่ำ 12% เผื่อกรณียังไม่มีข้อมูล)
+                                            // คำนวณความสูงแท่งหลัก
                                             const barHeightPercent = cat.totalWeight > 0
                                                 ? Math.max((cat.totalWeight / maxCategoryTotal) * 80, 15)
                                                 : 12;
@@ -479,7 +391,7 @@ export default function Home() {
                                                             : 'w-24 sm:w-28 md:w-32 opacity-100 hover:scale-105'
                                                         }`}
                                                 >
-                                                    {/* ตัวเลขบนหัวแท่งกราฟหลัก (แสดงตลอดเวลา) */}
+                                                    {/* ตัวเลขบนหัวแท่งกราฟหลัก */}
                                                     <div className="flex flex-col items-center mb-2 transition-transform duration-300">
                                                         <span className="font-['Fredoka_One'] text-sm sm:text-base md:text-lg text-[#1e1b4b] leading-tight">
                                                             {cat.totalWeight.toLocaleString(undefined, { maximumFractionDigits: 1 })}
@@ -515,7 +427,6 @@ export default function Home() {
 
                                         {/* แท่งขยะย่อยที่เฟดและสไลด์งอกออกมาทางขวา */}
                                         {activeCategory && activeCategory.items.map((item, idx) => {
-                                            // คำนวณความสูงแท่งย่อยเทียบกับชิ้นที่มากที่สุดในหมวด
                                             const subHeightPercent = item.value > 0
                                                 ? Math.max((item.value / activeCategory.maxSubItemWeight) * 75, 12)
                                                 : 10;
@@ -526,7 +437,7 @@ export default function Home() {
                                                     className="group relative flex flex-col items-center justify-end h-full w-12 sm:w-16 md:w-20 shrink-0 transition-all duration-500 animate-fadeIn"
                                                     style={{ animationDelay: `${idx * 60}ms` }}
                                                 >
-                                                    {/* 💬 TOOLTIP: ซ่อนไว้ แสดงตัวเลขและชื่อเมื่อ Hover เพื่อกันความยืดยาว */}
+                                                    {/* TOOLTIP */}
                                                     <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-[#0f172a] text-white text-center text-[10px] sm:text-xs font-bold py-1.5 px-2.5 rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap z-30 shadow-xl border border-white/10">
                                                         <p className="text-slate-200">{item.name}</p>
                                                         <p className="text-[#38bdf8] font-['Fredoka_One'] text-xs mt-0.5">
@@ -547,7 +458,6 @@ export default function Home() {
                                                 </div>
                                             );
                                         })}
-
                                     </div>
 
                                     {/* ข้อความแนะนำด้านล่าง */}

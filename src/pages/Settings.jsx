@@ -37,15 +37,15 @@ export default function Settings() {
 
     // States สำหรับอัปโหลดและ Crop รูปภาพ
     const [isUploading, setIsUploading] = useState(false);
+    const [isProcessingDeposit, setIsProcessingDeposit] = useState(false);
     const fileInputRef = useRef(null);
 
-    // States ใหม่สำหรับ react-easy-crop
+    // States สำหรับ react-easy-crop
     const [imageSrc, setImageSrc] = useState(null);
     const [crop, setCrop] = useState({ x: 0, y: 0 });
     const [zoom, setZoom] = useState(1);
     const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
 
-    // ฟังก์ชันดึงรูปภาพเข้ามาใน Cropper (ยังไม่อัปโหลด)
     const handleImageUpload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -56,7 +56,6 @@ export default function Settings() {
         };
         reader.readAsDataURL(file);
 
-        // เคลียร์ค่า input file เพื่อให้สามารถเลือกรูปเดิมซ้ำได้ในกรณีที่กดยกเลิกไป
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -68,7 +67,6 @@ export default function Settings() {
 
     const openModal = (mode, memberData = null) => {
         setModalMode(mode);
-        // รีเซ็ตค่าการ Crop ทุกครั้งที่เปิด Modal
         setImageSrc(null);
         setCrop({ x: 0, y: 0 });
         setZoom(1);
@@ -118,7 +116,7 @@ export default function Settings() {
     const cartTotalMoney = depositCart.reduce((sum, item) => sum + item.totalPrice, 0).toFixed(2);
     const cartTotalCarbon = depositCart.reduce((sum, item) => sum + item.totalCarbon, 0).toFixed(4);
 
-    // ปรับปรุงฟังก์ชันบันทึกให้ทำการ Crop ก่อน Upload
+    // แก้ไข: เพิ่มคำสั่ง await ในการเรียกใช้ Context เพื่อรอให้ฐานข้อมูลบันทึกสำเร็จก่อน
     const handleSave = async (e) => {
         e.preventDefault();
         setIsUploading(true);
@@ -126,7 +124,6 @@ export default function Settings() {
         try {
             let finalImageUrl = formData.image;
 
-            // ตรวจสอบว่ามีการอัปโหลดและ Crop รูปใหม่หรือไม่
             if (imageSrc && croppedAreaPixels) {
                 const croppedFile = await getCroppedImg(imageSrc, croppedAreaPixels);
                 const uploadedUrl = await uploadImageToCloudinary(croppedFile);
@@ -140,9 +137,9 @@ export default function Settings() {
             const finalData = { ...formData, image: finalImageUrl };
 
             if (modalMode === 'add') {
-                addMember(finalData);
+                await addMember(finalData); // ใส่ await
             } else if (modalMode === 'edit') {
-                updateMember(finalData);
+                await updateMember(finalData); // ใส่ await
             }
 
             closeModal();
@@ -151,6 +148,32 @@ export default function Settings() {
             alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง");
         } finally {
             setIsUploading(false);
+        }
+    };
+
+    // แก้ไข: ดึงฟังก์ชันบันทึกตะกร้าขยะออกมาจัดการแยก เพื่อใส่ try/catch และ await
+    const handleConfirmDeposit = async (e) => {
+        e.preventDefault();
+        if (!selectedDepositMember || depositCart.length === 0) return;
+
+        setIsProcessingDeposit(true);
+        try {
+            // รอจนกว่าจะบันทึกประวัติลงฐานข้อมูลสำเร็จ
+            await processDeposit(selectedDepositMember, depositCart, cartTotalMoney, cartTotalCarbon);
+
+            alert(`ยืนยันการรับฝากสำเร็จ!\n${selectedDepositMember.fullName} ได้รับเงิน ${cartTotalMoney} บาท`);
+
+            // ล้างค่าหลังจากบันทึกสำเร็จเท่านั้น
+            setDepositCart([]);
+            setSelectedDepositMember(null);
+            setDepositMemberSearch('');
+            setCurrentDepositItem({ category: 'plastic', item: 'พลาสติกรวม', weight: '' });
+            closeModal();
+        } catch (error) {
+            console.error("Deposit error:", error);
+            alert("บันทึกการฝากไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+        } finally {
+            setIsProcessingDeposit(false);
         }
     };
 
@@ -331,7 +354,7 @@ export default function Settings() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                                {/* --- คอลัมน์ 1: โปรไฟล์ & ข้อมูลพื้นฐาน --- */}
+                                {/* คอลัมน์ 1: โปรไฟล์ & ข้อมูลพื้นฐาน */}
                                 <div className="flex flex-col gap-4">
 
                                     {/* กล่องอัปโหลดและ Crop รูปภาพ */}
@@ -345,7 +368,6 @@ export default function Settings() {
                                         />
 
                                         {imageSrc ? (
-                                            // โหมด 1: เลือกรุปใหม่ แสดงเครื่องมือ Crop
                                             <div className="w-full flex flex-col gap-3">
                                                 <div className="w-full h-48 md:h-56 relative bg-gray-900 rounded-xl overflow-hidden shadow-sm">
                                                     <Cropper
@@ -373,7 +395,6 @@ export default function Settings() {
                                                 </div>
                                             </div>
                                         ) : formData.image ? (
-                                            // โหมด 2: โหมดแก้ไข มีรูปเดิมอยู่แล้ว
                                             <div
                                                 onClick={triggerFileInput}
                                                 className="relative group w-full h-48 md:h-56 rounded-xl overflow-hidden cursor-pointer shadow-sm border-2 border-transparent hover:border-[#3b82f6] transition-all"
@@ -387,7 +408,6 @@ export default function Settings() {
                                                 </div>
                                             </div>
                                         ) : (
-                                            // โหมด 3: โหมดเพิ่ม หรือยังไม่มีรูป
                                             <div
                                                 onClick={triggerFileInput}
                                                 className="w-full h-48 md:h-56 rounded-xl border-2 border-dashed border-[#cbd5e1] hover:border-[#3b82f6] bg-[#f8fafc] hover:bg-[#eff6ff] flex flex-col items-center justify-center cursor-pointer transition-all text-[#64748b] hover:text-[#3b82f6]"
@@ -411,12 +431,11 @@ export default function Settings() {
                                         />
                                     </div>
 
-                                    {/* --- ชั้นเรียน (แบบล็อคมาตรฐาน: เลือกระดับชั้น + ห้อง) & ชื่อเล่น --- */}
+                                    {/* ชั้นเรียน & ชื่อเล่น */}
                                     <div className="grid grid-cols-2 gap-3">
                                         <div>
                                             <label className="block text-xs font-bold text-[#64748b] mb-1">ชั้นเรียน</label>
                                             <div className="grid grid-cols-2 gap-1.5">
-                                                {/* 1. เลือกระดับชั้น */}
                                                 <select
                                                     value={formData.grade ? formData.grade.split('/')[0] : 'ป.1'}
                                                     onChange={(e) => {
@@ -434,7 +453,6 @@ export default function Settings() {
                                                     <option value="ป.6">ป.6</option>
                                                 </select>
 
-                                                {/* 2. เลือกห้องเรียน */}
                                                 <select
                                                     value={formData.grade && formData.grade.includes('/') ? formData.grade.split('/')[1] : '1'}
                                                     onChange={(e) => {
@@ -454,7 +472,6 @@ export default function Settings() {
                                             </div>
                                         </div>
 
-                                        {/* ชื่อเล่น */}
                                         <div>
                                             <label className="block text-xs font-bold text-[#64748b] mb-1">ชื่อเล่น</label>
                                             <input
@@ -470,9 +487,8 @@ export default function Settings() {
                                     </div>
                                 </div>
 
-                                {/* --- คอลัมน์ 2: ข้อมูลสถิติ & สถานะนักเรียน --- */}
+                                {/* คอลัมน์ 2: ข้อมูลสถิติ & สถานะนักเรียน */}
                                 <div className="flex flex-col gap-4">
-                                    {/* ยอดเงินสะสม */}
                                     <div>
                                         <label className="block text-xs font-bold text-[#64748b] mb-1">ยอดเงินสะสม (บาท)</label>
                                         <input
@@ -487,7 +503,6 @@ export default function Settings() {
                                         />
                                     </div>
 
-                                    {/* ลดคาร์บอน */}
                                     <div>
                                         <label className="block text-xs font-bold text-[#64748b] mb-1">ลดคาร์บอน (kgCO₂e)</label>
                                         <input
@@ -503,7 +518,6 @@ export default function Settings() {
                                         />
                                     </div>
 
-                                    {/* แต้มคาร์บอนเครดิต */}
                                     <div>
                                         <label className="block text-xs font-bold text-[#f59e0b] mb-1">แต้มเครดิต (สำหรับแลกของ)</label>
                                         <input
@@ -519,7 +533,6 @@ export default function Settings() {
                                         />
                                     </div>
 
-                                    {/* สถานะนักเรียน */}
                                     <div>
                                         <label className="block text-xs font-bold text-[#64748b] mb-1">สถานะนักเรียน</label>
                                         <select
@@ -536,9 +549,8 @@ export default function Settings() {
 
                             </div>
 
-                            {/* --- ส่วนปุ่มด้านล่าง (ลบ, ยกเลิก และ บันทึกข้อมูล) --- */}
+                            {/* ส่วนปุ่มด้านล่าง (ลบ, ยกเลิก และ บันทึกข้อมูล) */}
                             <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-2">
-                                {/* ปุ่มลบ */}
                                 <div>
                                     {modalMode === 'edit' && (
                                         <button
@@ -557,7 +569,6 @@ export default function Settings() {
                                     )}
                                 </div>
 
-                                {/* ปุ่มยกเลิก และ ยืนยัน */}
                                 <div className="flex gap-3">
                                     <button
                                         type="button"
@@ -570,13 +581,13 @@ export default function Settings() {
                                         type="submit"
                                         disabled={isUploading}
                                         className={`px-6 py-3 rounded-xl text-white font-bold text-sm transition-all duration-200 
-    ${isUploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-95'} 
-    ${modalMode === 'add'
+                                            ${isUploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-95'} 
+                                            ${modalMode === 'add'
                                                 ? 'bg-[#3b82f6] hover:bg-[#2563eb] shadow-[0_4px_12px_rgba(59,130,246,0.3)]'
                                                 : 'bg-[#ef4444] hover:bg-[#dc2626] shadow-[0_4px_12px_rgba(239,68,68,0.3)]'
                                             }`}
                                     >
-                                        {isUploading ? 'กำลังอัปโหลดรูป...' : 'บันทึกข้อมูล (Save)'}
+                                        {isUploading ? 'กำลังอัปโหลด...' : 'บันทึกข้อมูล (Save)'}
                                     </button>
                                 </div>
                             </div>
@@ -586,20 +597,7 @@ export default function Settings() {
                     {/* 2. Modal: รับฝากขยะ (ระบบตะกร้า Cart) */}
                     {modalMode === 'deposit' && (
                         <form
-                            onSubmit={(e) => {
-                                e.preventDefault();
-                                if (!selectedDepositMember || depositCart.length === 0) return;
-
-                                processDeposit(selectedDepositMember, depositCart, cartTotalMoney, cartTotalCarbon);
-
-                                alert(`ยืนยันการรับฝากสำเร็จ!\n${selectedDepositMember.fullName} ได้รับเงิน ${cartTotalMoney} บาท`);
-
-                                setDepositCart([]);
-                                setSelectedDepositMember(null);
-                                setDepositMemberSearch('');
-                                setCurrentDepositItem({ category: 'plastic', item: 'พลาสติกรวม', weight: '' });
-                                closeModal();
-                            }}
+                            onSubmit={handleConfirmDeposit}
                             className="relative w-full max-w-4xl bg-white border border-[#f0f0f0] rounded-[24px] p-6 md:p-8 flex flex-col md:flex-row gap-8 shadow-[0_20px_40px_rgba(0,0,0,0.15)] animate-modal-pop max-h-[90vh]"
                         >
                             <button type="button" onClick={closeModal} className="absolute top-4 right-4 p-2 bg-[#f8f9fa] rounded-full hover:bg-[#fee2e2] hover:text-red-500 text-[#6d6a8a] transition-colors z-10"><XMarkIcon className="w-5 h-5 font-bold" /></button>
@@ -611,7 +609,6 @@ export default function Settings() {
                                     <h2 className="font-['Fredoka_One'] text-xl text-[#1e1b4b]">รับฝากขยะ (ตะกร้า)</h2>
                                 </div>
 
-                                {/* ค้นหาชื่อสมาชิก */}
                                 <div className="flex flex-col gap-1.5">
                                     <label className="font-bold text-xs text-[#475569]">ค้นหาชื่อผู้ฝาก (พิมพ์เพื่อค้นหา)</label>
                                     <div className="relative">
@@ -684,7 +681,6 @@ export default function Settings() {
                             <div className="w-full md:w-1/2 flex flex-col h-[400px] md:h-auto">
                                 <h3 className="font-bold text-[#0f172a] text-sm mb-3">รายการรับฝากปัจจุบัน</h3>
 
-                                {/* ลิสต์รายการตะกร้า (Scrollable) */}
                                 <div className="flex-1 overflow-y-auto bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3 flex flex-col gap-2 hide-scrollbar mb-4">
                                     {depositCart.length === 0 ? (
                                         <div className="text-center text-[#94a3b8] text-xs font-bold py-10 mt-auto mb-auto">ยังไม่มีรายการขยะในตะกร้า</div>
@@ -701,7 +697,6 @@ export default function Settings() {
                                     )}
                                 </div>
 
-                                {/* สรุปยอดเงินและคาร์บอน */}
                                 <div className="grid grid-cols-2 gap-3 mb-4 shrink-0">
                                     <div className="flex flex-col items-center bg-white py-3 rounded-xl shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] border border-[#e2e8f0]">
                                         <span className="text-[10px] font-bold text-[#64748b] mb-1">ยอดเงินรวม</span>
@@ -715,10 +710,14 @@ export default function Settings() {
 
                                 <button
                                     type="submit"
-                                    disabled={depositCart.length === 0}
-                                    className="w-full bg-[#10b981] text-white font-bold text-sm py-4 rounded-xl hover:bg-[#059669] active:scale-[0.98] transition-all duration-200 shadow-[0_4px_10px_rgba(16,185,129,0.3)] shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+                                    disabled={depositCart.length === 0 || isProcessingDeposit}
+                                    className={`w-full text-white font-bold text-sm py-4 rounded-xl transition-all duration-200 shrink-0 
+                                        ${depositCart.length === 0 || isProcessingDeposit
+                                            ? 'bg-gray-400 cursor-not-allowed opacity-50'
+                                            : 'bg-[#10b981] hover:bg-[#059669] active:scale-[0.98] shadow-[0_4px_10px_rgba(16,185,129,0.3)] cursor-pointer'
+                                        }`}
                                 >
-                                    ยืนยันการรับฝาก
+                                    {isProcessingDeposit ? 'กำลังบันทึกข้อมูล...' : 'ยืนยันการรับฝาก'}
                                 </button>
                             </div>
                         </form>

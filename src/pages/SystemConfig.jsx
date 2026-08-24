@@ -21,15 +21,35 @@ export default function SystemConfig() {
     // -------------------------------------------------------------------------
     const [pricingData, setPricingData] = useState(pricing);
     const [durationData, setDurationData] = useState(duration);
+    const [isSavingPricing, setIsSavingPricing] = useState(false);
+    const [isSavingDuration, setIsSavingDuration] = useState(false);
 
-    const handleSavePricing = (e) => {
+    // 🚀 อัปเกรด: ใส่ async/await และแจ้งเตือน
+    const handleSavePricing = async (e) => {
         e.preventDefault();
-        updatePricing(pricingData);
+        setIsSavingPricing(true);
+        try {
+            await updatePricing(pricingData);
+            alert("บันทึกราคารับซื้อขยะสำเร็จ!");
+        } catch (error) {
+            alert("เกิดข้อผิดพลาดในการบันทึกราคา");
+        } finally {
+            setIsSavingPricing(false);
+        }
     };
 
-    const handleSaveDuration = (e) => {
+    // 🚀 อัปเกรด: ใส่ async/await และแจ้งเตือน
+    const handleSaveDuration = async (e) => {
         e.preventDefault();
-        updateDuration(durationData);
+        setIsSavingDuration(true);
+        try {
+            await updateDuration(durationData);
+            alert("บันทึกระยะเวลารับฝากขยะสำเร็จ!");
+        } catch (error) {
+            alert("เกิดข้อผิดพลาดในการบันทึกระยะเวลา");
+        } finally {
+            setIsSavingDuration(false);
+        }
     };
 
     // -------------------------------------------------------------------------
@@ -38,6 +58,7 @@ export default function SystemConfig() {
     const [isAddingReward, setIsAddingReward] = useState(false);
     const [newRewardForm, setNewRewardForm] = useState({ name: '', points: '', stock: '', iconName: 'Gift' });
     const [rewardErrors, setRewardErrors] = useState({ name: false, points: false, stock: false });
+    const [isSavingReward, setIsSavingReward] = useState(false);
 
     const handleStartAddReward = () => {
         setIsAddingReward(true);
@@ -45,7 +66,8 @@ export default function SystemConfig() {
         setRewardErrors({ name: false, points: false, stock: false });
     };
 
-    const handleConfirmAddReward = () => {
+    // 🚀 อัปเกรด: ใส่ async/await เพื่อรอการบันทึก Firebase ก่อนปิดหน้าต่าง
+    const handleConfirmAddReward = async () => {
         const errors = {
             name: !newRewardForm.name.trim(),
             points: !newRewardForm.points || newRewardForm.points <= 0,
@@ -53,24 +75,31 @@ export default function SystemConfig() {
         };
 
         setRewardErrors(errors);
+        if (errors.name || errors.points || errors.stock) return;
 
-        if (errors.name || errors.points || errors.stock) {
-            return;
+        setIsSavingReward(true);
+        try {
+            const updatedRewardsList = [
+                ...rewards,
+                {
+                    id: Date.now(),
+                    name: newRewardForm.name,
+                    points: parseInt(newRewardForm.points),
+                    stock: parseInt(newRewardForm.stock),
+                    iconName: newRewardForm.iconName || 'Gift'
+                }
+            ];
+
+            await updateRewards(updatedRewardsList);
+            alert("เพิ่มของรางวัลสำเร็จ!");
+
+            setIsAddingReward(false);
+            setNewRewardForm({ name: '', points: '', stock: '', iconName: 'Gift' });
+        } catch (error) {
+            alert("บันทึกของรางวัลไม่สำเร็จ");
+        } finally {
+            setIsSavingReward(false);
         }
-
-        updateRewards([
-            ...rewards,
-            {
-                id: Date.now(),
-                name: newRewardForm.name,
-                points: parseInt(newRewardForm.points),
-                stock: parseInt(newRewardForm.stock),
-                iconName: newRewardForm.iconName || 'Gift'
-            }
-        ]);
-
-        setIsAddingReward(false);
-        setNewRewardForm({ name: '', points: '', stock: '', iconName: 'Gift' });
     };
 
     const handleCancelAddReward = () => {
@@ -79,9 +108,14 @@ export default function SystemConfig() {
         setRewardErrors({ name: false, points: false, stock: false });
     };
 
-    const handleDeleteReward = (idToRemove) => {
+    // 🚀 อัปเกรด: ใส่ async/await
+    const handleDeleteReward = async (idToRemove) => {
         if (window.confirm("คุณต้องการลบของรางวัลนี้ใช่หรือไม่?")) {
-            updateRewards(rewards.filter(r => r.id !== idToRemove));
+            try {
+                await updateRewards(rewards.filter(r => r.id !== idToRemove));
+            } catch (error) {
+                alert("ลบของรางวัลไม่สำเร็จ");
+            }
         }
     };
 
@@ -101,25 +135,22 @@ export default function SystemConfig() {
     // -------------------------------------------------------------------------
     const [sourceGrade, setSourceGrade] = useState('');
     const [targetGrade, setTargetGrade] = useState('');
-    const [batchActionType, setBatchActionType] = useState('promote'); // 'promote' | 'graduate' | 'status'
+    const [batchActionType, setBatchActionType] = useState('promote');
     const [targetStatus, setTargetStatus] = useState('จบการศึกษา');
     const [selectedMemberIds, setSelectedMemberIds] = useState([]);
     const [isProcessing, setIsProcessing] = useState(false);
 
-    // ดึงรายชื่อชั้นเรียนทั้งหมดที่มีในระบบ (ไม่ซ้ำกัน)
     const availableGrades = useMemo(() => {
         if (!members || !Array.isArray(members)) return [];
         const grades = members.map(m => m.grade).filter(Boolean);
         return [...new Set(grades)].sort();
     }, [members]);
 
-    // รายชื่อนักเรียนในห้องที่เลือก (ไม่รวมคนที่จบการศึกษาไปแล้ว)
     const studentsInSourceGrade = useMemo(() => {
         if (!sourceGrade || !members) return [];
         return members.filter(m => m.grade === sourceGrade && m.status !== 'จบการศึกษา');
     }, [members, sourceGrade]);
 
-    // เมื่อเปลี่ยนห้องต้นทาง -> ดึงนักเรียน และเลื่อนระดับชั้นขึ้น 1 ระดับ
     const handleSourceGradeChange = (grade) => {
         setSourceGrade(grade);
         const students = members.filter(m => m.grade === grade && m.status !== 'จบการศึกษา');
@@ -130,17 +161,13 @@ export default function SystemConfig() {
             return;
         }
 
-        // ค้นหาตัวเลขชั้นเรียนจากชื่อห้อง (เช่น ป.1/1 จะดึงเลข 1 ออกมา)
         const numberMatch = grade.match(/([0-9]+)/);
         if (numberMatch) {
             const currentLevel = parseInt(numberMatch[1], 10);
-
-            // ดึงส่วนของห้องเรียนด้านหลัง เช่น "/1" หรือ "/2" (ถ้ามี)
             const roomMatch = grade.match(/(\/.*)$/);
             const roomSuffix = roomMatch ? roomMatch[1] : '';
 
             if (currentLevel < 6) {
-                // บังคับใส่คำว่า "ป." ไว้ข้างหน้าเสมอ
                 setTargetGrade(`ป.${currentLevel + 1}${roomSuffix}`);
                 setBatchActionType('promote');
             } else {
@@ -152,7 +179,6 @@ export default function SystemConfig() {
         }
     };
 
-    // เลือกทั้งหมด / ยกเลิกทั้งหมด
     const handleToggleSelectAll = () => {
         if (selectedMemberIds.length === studentsInSourceGrade.length) {
             setSelectedMemberIds([]);
@@ -161,14 +187,11 @@ export default function SystemConfig() {
         }
     };
 
-    // เลือก / ยกเลิก รายบุคคล
     const handleToggleMember = (id) => {
-        setSelectedMemberIds(prev =>
-            prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
-        );
+        setSelectedMemberIds(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
     };
 
-    // บันทึกการอัปเดตแบบกลุ่มลง Firestore (Batch Write)
+    // ฟังก์ชันนี้เขียนไว้ดีมากครับ (ใช้ Batch Write ช่วยประหยัดเวลาคุยกับเซิร์ฟเวอร์)
     const handleBatchExecute = async () => {
         if (selectedMemberIds.length === 0) {
             alert('กรุณาเลือกนักเรียนอย่างน้อย 1 คน');
@@ -218,7 +241,6 @@ export default function SystemConfig() {
         <div className="w-full bg-[#f8fafc] min-h-screen font-['Prompt'] pt-6 pb-24">
             <div className="max-w-6xl mx-auto px-4 md:px-8 fade-up">
 
-                {/* ปุ่มย้อนกลับ */}
                 <div className="mb-6 flex items-center justify-between">
                     <Link
                         to="../Settings"
@@ -229,12 +251,8 @@ export default function SystemConfig() {
                     </Link>
                 </div>
 
-                {/* การแบ่ง Layout 40 : 60 */}
                 <div className="grid grid-cols-1 lg:grid-cols-[4fr_6fr] gap-8 items-start">
 
-                    {/* ========================================================= */}
-                    {/* ฝั่งซ้าย (40%): ระยะเวลา, ของรางวัล และ ทะเบียนนักเรียน */}
-                    {/* ========================================================= */}
                     <div className="flex flex-col gap-6">
 
                         {/* กล่องที่ 1: ตั้งค่าระยะเวลารับฝาก */}
@@ -275,9 +293,11 @@ export default function SystemConfig() {
                             <div className="pt-2">
                                 <button
                                     type="submit"
-                                    className="w-full bg-[#fffbeb] hover:bg-[#f59e0b] text-[#d97706] hover:text-white border border-[#fde68a] hover:border-[#f59e0b] font-bold text-sm py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-sm cursor-pointer active:scale-[0.98]"
+                                    disabled={isSavingDuration}
+                                    className="w-full bg-[#fffbeb] hover:bg-[#f59e0b] disabled:bg-gray-200 disabled:border-gray-200 disabled:text-gray-500 text-[#d97706] hover:text-white border border-[#fde68a] hover:border-[#f59e0b] font-bold text-sm py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-sm cursor-pointer active:scale-[0.98]"
                                 >
-                                    <CheckCircleIcon className="w-5 h-5 stroke-2" /> บันทึกระยะเวลา
+                                    <CheckCircleIcon className="w-5 h-5 stroke-2" />
+                                    {isSavingDuration ? 'กำลังบันทึก...' : 'บันทึกระยะเวลา'}
                                 </button>
                             </div>
                         </form>
@@ -335,7 +355,6 @@ export default function SystemConfig() {
                                     );
                                 })}
 
-                                {/* ฟอร์มเพิ่มของรางวัล */}
                                 {isAddingReward && (
                                     <div className="bg-[#f5f3ff]/50 border-2 border-dashed border-[#7c3aed]/40 p-4 rounded-xl flex flex-col gap-3">
                                         <div className="flex items-center justify-between">
@@ -431,9 +450,10 @@ export default function SystemConfig() {
                                             <button
                                                 type="button"
                                                 onClick={handleConfirmAddReward}
-                                                className="px-4 py-1.5 rounded-lg bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-xs font-bold transition-all shadow-sm cursor-pointer active:scale-95"
+                                                disabled={isSavingReward}
+                                                className="px-4 py-1.5 rounded-lg bg-[#7c3aed] hover:bg-[#6d28d9] disabled:bg-gray-300 text-white text-xs font-bold transition-all shadow-sm cursor-pointer active:scale-95"
                                             >
-                                                ยืนยันเพิ่ม
+                                                {isSavingReward ? 'รอ...' : 'ยืนยันเพิ่ม'}
                                             </button>
                                         </div>
                                     </div>
@@ -445,7 +465,7 @@ export default function SystemConfig() {
                             </div>
                         </div>
 
-                        {/* กล่องที่ 3: จัดการเลื่อนชั้นปี & สถานะนักเรียนแบบกลุ่ม (Batch Action) */}
+                        {/* กล่องที่ 3: จัดการเลื่อนชั้นปี & สถานะนักเรียนแบบกลุ่ม */}
                         <div className="bg-white rounded-2xl border border-[#e2e8f0] p-6 shadow-sm flex flex-col gap-4">
                             <div className="flex items-center justify-between bg-[#3b82f6] text-white px-4 py-3 rounded-xl shadow-sm">
                                 <div className="flex items-center gap-3">
@@ -457,7 +477,6 @@ export default function SystemConfig() {
                                 </div>
                             </div>
 
-                            {/* เลือกระดับชั้นต้นทาง และรูปแบบการดำเนินการ */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1">
                                 <div className="flex flex-col gap-1">
                                     <label className="text-xs font-bold text-[#64748b]">1. เลือกชั้นเรียนต้นทาง</label>
@@ -487,7 +506,6 @@ export default function SystemConfig() {
                                 </div>
                             </div>
 
-                            {/* ฟิลด์ระบุชั้นปลายทาง หรือสถานะใหม่ */}
                             {batchActionType === 'promote' && (
                                 <div className="bg-[#eff6ff] p-3.5 rounded-xl border border-[#dbeafe] flex flex-col gap-1">
                                     <label className="text-xs font-bold text-[#2563eb]">ชั้นเรียนใหม่ปลายทาง (คำนวณอัตโนมัติ)</label>
@@ -516,7 +534,6 @@ export default function SystemConfig() {
                                 </div>
                             )}
 
-                            {/* รายชื่อนักเรียนที่เลือก */}
                             {sourceGrade && (
                                 <div className="flex flex-col gap-2 mt-1">
                                     <div className="flex justify-between items-center px-1">
@@ -628,9 +645,11 @@ export default function SystemConfig() {
                         <div className="flex justify-end border-t border-[#f1f5f9] pt-4 mt-auto">
                             <button
                                 type="submit"
-                                className="w-full md:w-auto bg-[#10b981] text-white hover:bg-[#059669] font-bold text-sm py-3 px-8 rounded-xl transition-all duration-200 shadow-[0_4px_12px_rgba(16,185,129,0.3)] flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+                                disabled={isSavingPricing}
+                                className="w-full md:w-auto bg-[#10b981] disabled:bg-gray-300 text-white hover:bg-[#059669] font-bold text-sm py-3 px-8 rounded-xl transition-all duration-200 shadow-[0_4px_12px_rgba(16,185,129,0.3)] flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
                             >
-                                <CheckCircleIcon className="w-5 h-5 stroke-2" /> บันทึกราคากลางใหม่
+                                <CheckCircleIcon className="w-5 h-5 stroke-2" />
+                                {isSavingPricing ? 'กำลังบันทึก...' : 'บันทึกราคากลางใหม่'}
                             </button>
                         </div>
                     </form>
