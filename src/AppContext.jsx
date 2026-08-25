@@ -268,7 +268,7 @@ export const AppProvider = ({ children }) => {
 
     return (
         <AppContext.Provider value={contextValue}>
-            {isAppLoading ? <AppGlobalLoader /> : children}
+            {children}
         </AppContext.Provider>
     );
 };
@@ -276,31 +276,3 @@ export const AppProvider = ({ children }) => {
 export const useApp = () => {
     return useContext(AppContext);
 };
-
-// ==========================================
-// UI Component: หน้าจอโหลด
-// ==========================================
-const AppGlobalLoader = () => (
-    <div className="w-full overflow-hidden bg-[#f8fafc] min-h-screen cursor-wait">
-        <div className="w-full bg-[#f0eeff] pt-8 md:pt-16 pb-16">
-            <div className="max-w-7xl mx-auto px-6 md:px-8">
-                <div className="flex flex-col md:flex-row items-center justify-between min-h-[50vh] mb-20">
-                    <div className="w-full md:w-1/2 flex flex-col items-start gap-6 z-10">
-                        <div className="w-48 h-10 bg-white/60 rounded-full animate-pulse shadow-sm"></div>
-                        <div className="w-full max-w-lg space-y-4">
-                            <div className="h-12 md:h-16 bg-gray-300/60 rounded-2xl animate-pulse w-full"></div>
-                            <div className="h-12 md:h-16 bg-gray-300/60 rounded-2xl animate-pulse w-3/4"></div>
-                        </div>
-                        <div className="w-full max-w-md space-y-3 mt-2">
-                            <div className="h-4 bg-gray-300/50 rounded-full animate-pulse w-full"></div>
-                            <div className="h-4 bg-gray-300/50 rounded-full animate-pulse w-5/6"></div>
-                        </div>
-                    </div>
-                    <div className="w-full md:w-1/2 flex justify-center mt-16 md:mt-0 relative">
-                        <div className="w-56 h-64 md:w-72 md:h-80 bg-gray-200/60 rounded-[32px] animate-pulse border-4 border-gray-100/50"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-);

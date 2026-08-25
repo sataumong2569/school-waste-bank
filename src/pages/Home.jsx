@@ -11,16 +11,9 @@ const ReceiptBill = lazy(() => import('../components/ReceiptBill'));
 const HeartMemberGrid = lazy(() => import('../components/HeartMemberGrid'));
 
 export default function Home() {
-    const [isLoading, setIsLoading] = useState(true);
 
-    // ดึงเฉพาะข้อมูลสถิติรวม ไม่ดึง members มาให้หนักเครื่อง
-    const { pricing, sysStats, priceUpdatedAt } = useApp();
-
-    useEffect(() => {
-        if (sysStats) {
-            setIsLoading(false);
-        }
-    }, [sysStats]);
+    // ดึง isAppLoading จาก Context แล้วเปลี่ยนชื่อเป็น isLoading เพื่อให้ UI ด้านล่างทำงานตรงกับ Firebase ทันที
+    const { pricing, sysStats, priceUpdatedAt, isAppLoading: isLoading } = useApp();
 
     // ระบบคำนวณสัดส่วนขยะ (กราฟวงกลมและกราฟแท่ง)
     const dashboardData = useMemo(() => {
