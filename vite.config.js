@@ -43,5 +43,26 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,jpg}']
       }
     })
-  ]
+  ],
+  // เพิ่มการตั้งค่า Build เพื่อทำการหั่นไฟล์ (Manual Chunks)
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          // 1. แยก Firebase 
+          if (id.includes('node_modules/firebase') || id.includes('node_modules/@firebase')) {
+            return 'firebase-vendor';
+          }
+          // 2. แยกสาย React ทั้งหมด
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router-dom')) {
+            return 'react-vendor';
+          }
+          // 3. แยกชุดไอคอน 
+          if (id.includes('node_modules/@heroicons')) {
+            return 'heroicons-vendor';
+          }
+        }
+      }
+    }
+  }
 });

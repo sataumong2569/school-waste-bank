@@ -120,11 +120,23 @@ export default function Settings() {
     // แก้ไข: เพิ่มคำสั่ง await ในการเรียกใช้ Context เพื่อรอให้ฐานข้อมูลบันทึกสำเร็จก่อน
     const handleSave = async (e) => {
         e.preventDefault();
+
+        // 1. ดักจับ: ถ้าไม่มีการเลือกรูปใหม่ (imageSrc) และ ไม่มีรูปเดิมอยู่แล้ว (formData.image)
+        if (!imageSrc && !formData.image) {
+            // แจ้งเตือน Pop-up
+            const confirmNoImage = window.confirm("คุณยังไม่ได้ใส่รูปภาพโปรไฟล์ ต้องการบันทึกข้อมูลโดยไม่ใช้รูปภาพใช่หรือไม่?");
+            if (!confirmNoImage) {
+                return; // ถ้าผู้ใช้กดยกเลิก ให้หยุดการทำงานและกลับไปหน้าฟอร์ม
+            }
+        }
+
         setIsUploading(true);
 
         try {
-            let finalImageUrl = formData.image;
+            // 2. ให้ค่าเริ่มต้นเป็นรูปเดิม หรือค่าว่าง "" (ถ้าไม่มีรูป)
+            let finalImageUrl = formData.image || "";
 
+            // 3. ถ้ามีการเลือกรูปใหม่ ค่อยประมวลผลและส่งขึ้น Cloudinary
             if (imageSrc && croppedAreaPixels) {
                 const croppedFile = await getCroppedImg(imageSrc, croppedAreaPixels);
                 const uploadedUrl = await uploadImageToCloudinary(croppedFile);
@@ -135,12 +147,13 @@ export default function Settings() {
                 }
             }
 
+            // 4. บันทึกข้อมูล (ถ้าไม่มีรูป finalImageUrl จะเป็น "")
             const finalData = { ...formData, image: finalImageUrl };
 
             if (modalMode === 'add') {
-                await addMember(finalData); // ใส่ await
+                await addMember(finalData);
             } else if (modalMode === 'edit') {
-                await updateMember(finalData); // ใส่ await
+                await updateMember(finalData);
             }
 
             closeModal();

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { ArrowRightStartOnRectangleIcon } from '@heroicons/react/24/outline'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import umonglogo from '../assets/umong1municipal_icon_notra.png'
+import umonglogo from '../assets/umong1municipal_icon_notra.webp'
 import { auth } from '../firebase'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 

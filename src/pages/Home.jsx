@@ -1,15 +1,14 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
 import {
-    PlusIcon, QrCodeIcon, TrashIcon,
-    UsersIcon, BanknotesIcon, GlobeAsiaAustraliaIcon,
-    CalendarDaysIcon, ChartBarIcon, ArrowTrendingUpIcon, StarIcon
+    TrashIcon, UsersIcon, BanknotesIcon, GlobeAsiaAustraliaIcon, StarIcon
 } from '@heroicons/react/24/outline'
-import ReceiptBill from '../components/ReceiptBill'
 
 import { useApp } from '../AppContext';
 import { WASTE_CATEGORIES } from '../utils/wasteConfig';
-import HeartMemberGrid from '../components/HeartMemberGrid';
+
+const ReceiptBill = lazy(() => import('../components/ReceiptBill'));
+const HeartMemberGrid = lazy(() => import('../components/HeartMemberGrid'));
 
 export default function Home() {
     const [isLoading, setIsLoading] = useState(true);
@@ -18,11 +17,10 @@ export default function Home() {
     const { pricing, sysStats, priceUpdatedAt } = useApp();
 
     useEffect(() => {
-        const timer = setTimeout(() => {
+        if (sysStats) {
             setIsLoading(false);
-        }, 500);
-        return () => clearTimeout(timer);
-    }, []);
+        }
+    }, [sysStats]);
 
     // ระบบคำนวณสัดส่วนขยะ (กราฟวงกลมและกราฟแท่ง)
     const dashboardData = useMemo(() => {
@@ -88,7 +86,7 @@ export default function Home() {
             pieGradientString: pieConicGradient.length > 0 ? `conic-gradient(${pieConicGradient.join(', ')})` : `conic-gradient(#e2e8f0 0% 100%)`,
             detailedWaste
         };
-    }, [sysStats]); // เปลี่ยน dependencies เป็นการพึ่งพาแค่ sysStats
+    }, [sysStats]);
 
     const stats = [
         { title: 'ประเภทขยะมากที่สุด', value: dashboardData.topCategoryName, unit: '', icon: StarIcon, clayClass: 'clay-card-pink' },
@@ -108,7 +106,7 @@ export default function Home() {
             <div className="w-full bg-[#f0eeff] pt-8 md:pt-16 pb-16">
                 <div className="max-w-7xl mx-auto px-6 md:px-8">
 
-                    <div className="flex flex-col md:flex-row items-center justify-between min-h-[50vh] mb-20 fade-up">
+                    <div className="flex flex-col md:flex-row items-center justify-between md:min-h-[50vh] mb-10 md:mb-20 fade-up">
                         <div className="w-full md:w-1/2 flex flex-col items-start gap-6 z-10">
                             <div className="inline-flex items-center gap-2 bg-white/60 px-4 py-2 rounded-full shadow-[inset_0_2px_4px_rgba(255,255,255,1),_0_4px_10px_rgba(124,58,237,0.1)] backdrop-blur-sm">
                                 <span className="w-2.5 h-2.5 rounded-full bg-[#7c3aed] animate-pulse"></span>
@@ -161,14 +159,24 @@ export default function Home() {
                                 <div key={index} className={`${stat.clayClass} min-w-[210px] w-full p-5 md:p-6 flex flex-col justify-between snap-center md:snap-align-none fade-up hover-bouncy cursor-pointer rounded-[24px]`} style={{ animationDelay: `${index * 0.03}s` }}>
                                     <div className="flex justify-between items-start mb-3">
                                         <div className="p-2.5 md:p-3 bg-white/20 rounded-[12px] md:rounded-[14px] shadow-[inset_0_2px_6px_rgba(255,255,255,0.4)]">
-                                            <stat.icon className="w-6 h-6 md:w-7 md:h-7 text-white" />
+                                            {/* 1. สีไอคอน: ขาวนวล */}
+                                            <stat.icon className="w-6 h-6 md:w-7 md:h-7 text-slate-50" />
                                         </div>
                                     </div>
                                     <div>
-                                        <p className="font-['Prompt'] font-semibold text-white/90 text-xs md:text-sm mt-1 md:mt-2">{stat.title}</p>
+                                        {/* 2. สีชื่อหัวข้อ: ขาวนวลแบบโปร่งแสง 90% */}
+                                        <p className="font-['Prompt'] font-semibold text-xs md:text-sm mt-1 md:mt-2 text-slate-50/90">
+                                            {stat.title}
+                                        </p>
                                         <div className="flex items-baseline gap-1 mt-0.5 md:mt-1">
-                                            <span className="font-['Fredoka_One'] text-2xl md:text-4xl text-white tracking-wide">{stat.value}</span>
-                                            <span className="font-['Prompt'] font-medium text-[11px] md:text-sm text-white/80">{stat.unit}</span>
+                                            {/* 3. สีตัวเลข: ขาวนวล 100% สว่างสุด */}
+                                            <span className="font-['Fredoka_One'] text-2xl md:text-4xl tracking-wide text-slate-50">
+                                                {stat.value}
+                                            </span>
+                                            {/* 4. สีหน่วย: ขาวนวลแบบโปร่งแสง 80% */}
+                                            <span className="font-['Prompt'] font-medium text-[11px] md:text-sm text-slate-50/80">
+                                                {stat.unit}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -179,9 +187,16 @@ export default function Home() {
                     {/* ข้อมูลสมาชิก & กราฟวงกลม */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
 
-                        {/* ฝั่งซ้าย: หัวใจ */}
+                        {/* 🚀 2. ครอบ Suspense ให้ส่วนหัวใจ เพื่อสร้างหน้าโหลดจำลองระหว่างดึงไฟล์ */}
                         <div className="fade-up" style={{ animationDelay: '0.2s' }}>
-                            <HeartMemberGrid />
+                            <Suspense fallback={
+                                <div className="w-full min-h-[400px] bg-white/50 backdrop-blur-sm rounded-[32px] animate-pulse flex flex-col items-center justify-center border border-white">
+                                    <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+                                    <p className="mt-4 text-[#6d6a8a] font-['Prompt'] text-sm font-medium">กำลังโหลดหัวใจสมาชิก...</p>
+                                </div>
+                            }>
+                                <HeartMemberGrid />
+                            </Suspense>
                         </div>
 
                         {/* ฝั่งขวา: กราฟวงกลม */}
@@ -268,55 +283,71 @@ export default function Home() {
                     <div className="flex md:hidden justify-center gap-2 mb-6">
                         <button
                             onClick={() => setActiveReceiptTab('PL')}
-                            className={`px-4 py-2 rounded-xl font-bold text-xs transition-all shadow-sm ${activeReceiptTab === 'PL' ? 'bg-[#10b981] text-white shadow-md scale-105' : 'bg-white text-gray-600 border border-gray-200'}`}
+                            className={`px-4 py-2 rounded-xl font-bold text-xs transition-all shadow-sm ${activeReceiptTab === 'PL' ? 'bg-[#059669] text-white shadow-md scale-105' : 'bg-white text-gray-600 border border-gray-200'}`}
                         >
                             พลาสติก
                         </button>
                         <button
                             onClick={() => setActiveReceiptTab('P')}
-                            className={`px-4 py-2 rounded-xl font-bold text-xs transition-all shadow-sm ${activeReceiptTab === 'P' ? 'bg-[#10b981] text-white shadow-md scale-105' : 'bg-white text-gray-600 border border-gray-200'}`}
+                            className={`px-4 py-2 rounded-xl font-bold text-xs transition-all shadow-sm ${activeReceiptTab === 'P' ? 'bg-[#059669] text-white shadow-md scale-105' : 'bg-white text-gray-600 border border-gray-200'}`}
                         >
                             กระดาษ
                         </button>
                         <button
                             onClick={() => setActiveReceiptTab('ETC')}
-                            className={`px-4 py-2 rounded-xl font-bold text-xs transition-all shadow-sm ${activeReceiptTab === 'ETC' ? 'bg-[#10b981] text-white shadow-md scale-105' : 'bg-white text-gray-600 border border-gray-200'}`}
+                            className={`px-4 py-2 rounded-xl font-bold text-xs transition-all shadow-sm ${activeReceiptTab === 'ETC' ? 'bg-[#059669] text-white shadow-md scale-105' : 'bg-white text-gray-600 border border-gray-200'}`}
                         >
                             เบ็ดเตล็ด
                         </button>
                     </div>
 
-                    {/* บิลแบบย่อ (ใช้ CSS hidden md:block ซ่อนแสดงตามจอ) */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
-                        {/* บิล 1: พลาสติก */}
-                        <div className={`${activeReceiptTab === 'PL' ? 'block' : 'hidden'} md:block w-full max-w-sm md:max-w-none mx-auto`}>
-                            <ReceiptBill category="PL" shopName="SchoolWaste" date="ล่าสุด" items={[
-                                { name: "พลาสติกรวม", price: pricing["พลาสติกรวม"]?.toFixed(2) || "0.00" },
-                                { name: "ขวดน้ำขุ่น", price: pricing["ขวดน้ำขุ่น"]?.toFixed(2) || "0.00" },
-                                { name: "ขวดน้ำใส", price: pricing["ขวดน้ำใส"]?.toFixed(2) || "0.00" },
-                                { name: "ขวดน้ำ PET สี", price: pricing["ขวดน้ำ PET สี"]?.toFixed(2) || "0.00" }
-                            ]} />
+                    {/* 🚀 ครอบ Suspense พร้อม Skeleton บิลใบเสร็จ */}
+                    <Suspense fallback={
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
+                            {Array.from({ length: 3 }).map((_, idx) => (
+                                <div key={idx} className="w-full max-w-[320px] mx-auto h-[380px] bg-white border-2 border-dashed border-gray-300 p-6 rounded-sm animate-pulse flex flex-col justify-between">
+                                    <div className="h-6 bg-gray-200 rounded w-1/2 mx-auto"></div>
+                                    <div className="space-y-3">
+                                        <div className="h-4 bg-gray-200 rounded w-full"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-4/6"></div>
+                                    </div>
+                                    <div className="h-8 bg-gray-200 rounded w-full"></div>
+                                </div>
+                            ))}
                         </div>
+                    }>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
+                            {/* บิล 1: พลาสติก */}
+                            <div className={`${activeReceiptTab === 'PL' ? 'block' : 'hidden'} md:block w-full max-w-sm md:max-w-none mx-auto`}>
+                                <ReceiptBill category="PL" shopName="SchoolWaste" date="ล่าสุด" items={[
+                                    { name: "พลาสติกรวม", price: pricing["พลาสติกรวม"]?.toFixed(2) || "0.00" },
+                                    { name: "ขวดน้ำขุ่น", price: pricing["ขวดน้ำขุ่น"]?.toFixed(2) || "0.00" },
+                                    { name: "ขวดน้ำใส", price: pricing["ขวดน้ำใส"]?.toFixed(2) || "0.00" },
+                                    { name: "ขวดน้ำ PET สี", price: pricing["ขวดน้ำ PET สี"]?.toFixed(2) || "0.00" }
+                                ]} />
+                            </div>
 
-                        {/* บิล 2: กระดาษ */}
-                        <div className={`${activeReceiptTab === 'P' ? 'block' : 'hidden'} md:block w-full max-w-sm md:max-w-none mx-auto`}>
-                            <ReceiptBill category="P" shopName="SchoolWaste" date="ล่าสุด" items={[
-                                { name: "กระดาษขาวดำ", price: pricing["กระดาษขาวดำ"]?.toFixed(2) || "0.00" },
-                                { name: "กระดาษสีรวม", price: pricing["กระดาษสีรวม"]?.toFixed(2) || "0.00" },
-                                { name: "กระดาษลัง", price: pricing["กระดาษลัง"]?.toFixed(2) || "0.00" }
-                            ]} />
-                        </div>
+                            {/* บิล 2: กระดาษ */}
+                            <div className={`${activeReceiptTab === 'P' ? 'block' : 'hidden'} md:block w-full max-w-sm md:max-w-none mx-auto`}>
+                                <ReceiptBill category="P" shopName="SchoolWaste" date="ล่าสุด" items={[
+                                    { name: "กระดาษขาวดำ", price: pricing["กระดาษขาวดำ"]?.toFixed(2) || "0.00" },
+                                    { name: "กระดาษสีรวม", price: pricing["กระดาษสีรวม"]?.toFixed(2) || "0.00" },
+                                    { name: "กระดาษลัง", price: pricing["กระดาษลัง"]?.toFixed(2) || "0.00" }
+                                ]} />
+                            </div>
 
-                        {/* บิล 3: เบ็ดเตล็ด */}
-                        <div className={`${activeReceiptTab === 'ETC' ? 'block' : 'hidden'} md:block w-full max-w-sm md:max-w-none mx-auto`}>
-                            <ReceiptBill category="ETC" shopName="SchoolWaste" date="ล่าสุด" items={[
-                                { name: "กระป๋องกาแฟ/นม", price: pricing["กระป๋องกาแฟ/นม"]?.toFixed(2) || "0.00" },
-                                { name: "เหล็กหนา", price: pricing["เหล็กหนา"]?.toFixed(2) || "0.00" },
-                                { name: "เหล็กบาง", price: pricing["เหล็กบาง"]?.toFixed(2) || "0.00" },
-                                { name: "สังกะสี", price: pricing["สังกะสี"]?.toFixed(2) || "0.00" }
-                            ]} />
+                            {/* บิล 3: เบ็ดเตล็ด */}
+                            <div className={`${activeReceiptTab === 'ETC' ? 'block' : 'hidden'} md:block w-full max-w-sm md:max-w-none mx-auto`}>
+                                <ReceiptBill category="ETC" shopName="SchoolWaste" date="ล่าสุด" items={[
+                                    { name: "กระป๋องกาแฟ/นม", price: pricing["กระป๋องกาแฟ/นม"]?.toFixed(2) || "0.00" },
+                                    { name: "เหล็กหนา", price: pricing["เหล็กหนา"]?.toFixed(2) || "0.00" },
+                                    { name: "เหล็กบาง", price: pricing["เหล็กบาง"]?.toFixed(2) || "0.00" },
+                                    { name: "สังกะสี", price: pricing["สังกะสี"]?.toFixed(2) || "0.00" }
+                                ]} />
+                            </div>
                         </div>
-                    </div>
+                    </Suspense>
 
                 </div>
             </div>

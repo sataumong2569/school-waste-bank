@@ -7,7 +7,6 @@ import Footer from './components/Footer';
 import MobileNav from './components/MobileNav';
 import ScrollToTop from './components/ScrollToTop';
 
-
 import Home from './pages/Home';
 
 const Members = lazy(() => import('./pages/Members'));
@@ -22,8 +21,7 @@ function App() {
       <Navbar />
 
       <main className="w-full flex-1">
-        {/* ใช้ fallback={null} เพื่อไม่ให้โชว์วงกลมโหลดซ้อนกับ Skeleton ของหน้าเว็บ */}
-        <Suspense fallback={null}>
+        <Suspense fallback={<div className="w-full min-h-[80vh] bg-white"></div>}>
           <Routes>
             <Route path="/" element={<Home />} />
 

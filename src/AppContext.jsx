@@ -48,7 +48,7 @@ export const AppProvider = ({ children }) => {
                     await setDoc(configRef, { pricing: DEFAULT_PRICES, duration: { round1: 15, round2: 25 }, rewards: [] });
                 }
 
-                // 2. ดึงข้อมูลบิลรวมกลาง (System Stats) - เสียแค่ 1 Read ประหยัดสุดๆ
+                // 2. ดึงข้อมูลบิลรวมกลาง (System Stats)
                 const statsRef = doc(db, 'system', 'stats');
                 const statsSnap = await getDoc(statsRef);
                 if (statsSnap.exists()) {
@@ -59,16 +59,23 @@ export const AppProvider = ({ children }) => {
                     setSysStats(initialStats);
                 }
 
-                // 3. ดึง Directory สมาชิกสำหรับหน้าจัดการ
+            } catch (error) {
+                console.error("Error fetching core data:", error);
+            } finally {
+                // 🚀 หัวใจสำคัญ: ปลดล็อกหน้าจอโหลดทันทีที่ได้สถิติหลัก!
+                // ไม่ต้องรอโหลดรายชื่อเด็กทั้งโรงเรียน ผู้ใช้จะได้เห็นหน้าเว็บทันที
+                setIsAppLoading(false);
+            }
+
+            // 3. ดึง Directory สมาชิก (ทำเป็น Background Process ภายหลัง)
+            // ระหว่างที่แอบดึงข้อมูลก้อนนี้ ผู้ใช้จะเห็นหน้า Dashboard สวยๆ ไปพลางๆ แล้ว
+            try {
                 const membersRef = collection(db, 'members');
                 const membersSnap = await getDocs(membersRef);
                 const loadedMembers = membersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 setMembers(loadedMembers);
-
             } catch (error) {
-                console.error("Error fetching data:", error);
-            } finally {
-                setIsAppLoading(false);
+                console.error("Error fetching members:", error);
             }
         };
 
