@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react'
+import { useState, useMemo, lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
 import {
     TrashIcon, UsersIcon, BanknotesIcon, GlobeAsiaAustraliaIcon, StarIcon

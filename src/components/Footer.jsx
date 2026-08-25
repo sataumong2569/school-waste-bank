@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import umonglogo from '../assets/umong1municipal_icon_notra.png';
+import umonglogo from '../assets/umong1municipal_icon_notra.webp';
 
 export default function Footer() {
     return (
@@ -12,7 +12,14 @@ export default function Footer() {
                     {/* แถวบน: โลโก้ + ชื่อโรงเรียน */}
                     <div className="flex items-center gap-4 mb-3">
                         <div className="p-3 bg-white rounded-2xl shadow-[0_4px_10px_rgba(0,0,0,0.05)] border border-[#e2e8f0]/60 flex items-center justify-center">
-                            <img src={umonglogo} alt="Logo" className="w-16 h-16 object-contain" />
+                            <img
+                                src={umonglogo}
+                                alt="Logo"
+                                width="64"
+                                height="64"
+                                loading="lazy"
+                                className="w-26 h-26 object-contain"
+                            />
                         </div>
                         <h3 className="font-['Fredoka_One'] text-xl md:text-2xl text-[#1e1b4b]">
                             โรงเรียนเทศบาลอุโมงค์ 1
