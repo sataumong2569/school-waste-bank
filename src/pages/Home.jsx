@@ -9,6 +9,7 @@ import { WASTE_CATEGORIES } from '../utils/wasteConfig';
 
 const ReceiptBill = lazy(() => import('../components/ReceiptBill'));
 const HeartMemberGrid = lazy(() => import('../components/HeartMemberGrid'));
+import PwaInstallPopup from '../components/PwaInstallPopup';
 
 export default function Home() {
 
@@ -499,6 +500,8 @@ export default function Home() {
                     </div>
                 </div>
             </div>
+            {/* Popup ติดตั้ง PWA */}
+            <PwaInstallPopup />
 
         </div>
     )
