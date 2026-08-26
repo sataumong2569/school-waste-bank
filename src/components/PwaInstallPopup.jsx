@@ -1,9 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
+import PwaModalContent from './PwaModalContent';
 
-export default function PwaInstallPopup() {
+const PwaInstallPopup = forwardRef(function PwaInstallPopup(props, ref) {
     const [showTeaser, setShowTeaser] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [activeTab, setActiveTab] = useState('ios');
+
+    // อนุญาตให้ข้างนอก (เช่น Footer) สั่งเปิด Modal ผ่าน ref ได้
+    useImperativeHandle(ref, () => ({
+        openModal: () => setShowModal(true)
+    }));
 
     useEffect(() => {
         const isStandalone =
@@ -22,30 +28,25 @@ export default function PwaInstallPopup() {
         sessionStorage.setItem('pwa_popup_dismissed', 'true');
     };
 
-    if (!showTeaser && !showModal) return null;
-
     return (
         <>
-            {/* ปุ่มลอยวงกลมมุมขวาล่าง  */}
+            {/* ปุ่มลอยวงกลมมุมขวาล่าง */}
             {showTeaser && (
                 <div className="fixed bottom-24 right-5 sm:bottom-8 sm:right-8 z-40 flex items-center gap-3">
-                    {/* ป้ายข้อความกำกับ */}
                     <div
                         onClick={() => setShowModal(true)}
                         className="hidden sm:flex cursor-pointer items-center rounded-full bg-slate-900/95 px-4 py-2 text-sm font-semibold text-white shadow-lg backdrop-blur-sm transition-all hover:bg-slate-900"
                     >
-                        <span>ติดตั้งแอป</span>
+                        <span>ติดตั้งแอปลงมือถือ</span>
                     </div>
-
 
                     <div className="relative">
                         <button
                             type="button"
                             onClick={() => setShowModal(true)}
-                            className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 text-white shadow-2xl shadow-emerald-500/40 ring-4 ring-white transition-transform hover:scale-105 active:scale-95 hover:bg-emerald-600"
+                            className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500 text-white shadow-2xl shadow-emerald-500/40 ring-4 ring-white transition-transform hover:scale-105 active:scale-95 hover:bg-emerald-600"
                             aria-label="ติดตั้งแอปพลิเคชัน"
                         >
-
                             <svg
                                 className="h-8 w-8"
                                 fill="none"
@@ -61,7 +62,6 @@ export default function PwaInstallPopup() {
                             </svg>
                         </button>
 
-                        {/* ปุ่มปิดขนาดเล็ก  */}
                         <button
                             type="button"
                             onClick={handleCloseTeaser}
@@ -82,7 +82,7 @@ export default function PwaInstallPopup() {
                 </div>
             )}
 
-            {/* หน้าต่างแนะนำขั้นตอน  */}
+            {/* หน้าต่าง Modal แสดงขั้นตอน */}
             {showModal && (
                 <div
                     onClick={() => setShowModal(false)}
@@ -92,7 +92,6 @@ export default function PwaInstallPopup() {
                         onClick={(e) => e.stopPropagation()}
                         className="w-full max-w-md rounded-3xl bg-white p-6 sm:p-8 shadow-2xl ring-1 ring-slate-100"
                     >
-                        {/* ส่วนหัว */}
                         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                             <h3 className="text-lg sm:text-xl font-bold text-slate-900">
                                 วิธีติดตั้งลงหน้าจอโฮม
@@ -115,7 +114,6 @@ export default function PwaInstallPopup() {
                             </button>
                         </div>
 
-                        {/* แท็บเลือกระบบปฏิบัติการ */}
                         <div className="mt-5 grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1.5 text-sm font-semibold">
                             <button
                                 type="button"
@@ -139,88 +137,13 @@ export default function PwaInstallPopup() {
                             </button>
                         </div>
 
-                        {/* รายการขั้นตอน  */}
-                        <div className="mt-6 space-y-4 text-sm leading-relaxed text-slate-600">
-                            {activeTab === 'ios' ? (
-                                <>
-                                    <div className="flex items-start gap-3.5">
-                                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 font-bold text-slate-700 text-xs">
-                                            1
-                                        </span>
-                                        <p>เปิดผ่านเบราว์เซอร์ Safari</p>
-                                    </div>
-                                    <div className="flex items-start gap-3.5">
-                                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 font-bold text-slate-700 text-xs">
-                                            2
-                                        </span>
-                                        <p>
-                                            กดปุ่ม <strong>แชร์ (Share)</strong> ที่แถบเมนูด้านล่าง
-                                        </p>
-                                    </div>
-                                    <div className="flex items-start gap-3.5">
-                                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 font-bold text-slate-700 text-xs">
-                                            3
-                                        </span>
-                                        <p>
-                                            เลือก <strong>เพิ่มไปยังหน้าจอโฮม (Add to Home Screen)</strong>
-                                        </p>
-                                    </div>
-                                    <div className="flex items-start gap-3.5">
-                                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 font-bold text-slate-700 text-xs">
-                                            4
-                                        </span>
-                                        <p>
-                                            กด <strong>เพิ่ม (Add)</strong> ที่มุมขวาบน
-                                        </p>
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <div className="flex items-start gap-3.5">
-                                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 font-bold text-slate-700 text-xs">
-                                            1
-                                        </span>
-                                        <p>เปิดผ่านเบราว์เซอร์ Google Chrome</p>
-                                    </div>
-                                    <div className="flex items-start gap-3.5">
-                                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 font-bold text-slate-700 text-xs">
-                                            2
-                                        </span>
-                                        <p>
-                                            กดปุ่ม <strong>จุด 3 จุด</strong> ที่มุมขวาบน
-                                        </p>
-                                    </div>
-                                    <div className="flex items-start gap-3.5">
-                                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 font-bold text-slate-700 text-xs">
-                                            3
-                                        </span>
-                                        <p>
-                                            เลือก <strong>ติดตั้งแอป</strong> หรือ <strong>เพิ่มลงในหน้าจอหลัก</strong>
-                                        </p>
-                                    </div>
-                                    <div className="flex items-start gap-3.5">
-                                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 font-bold text-slate-700 text-xs">
-                                            4
-                                        </span>
-                                        <p>
-                                            กดยืนยัน <strong>ติดตั้ง</strong>
-                                        </p>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-
-                        {/* ปุ่มปิด  */}
-                        <button
-                            type="button"
-                            onClick={() => setShowModal(false)}
-                            className="mt-7 w-full rounded-2xl bg-slate-900 py-3 text-sm font-bold text-white transition-colors hover:bg-slate-800 active:scale-95 shadow-lg shadow-slate-900/10"
-                        >
-                            เข้าใจแล้ว
-                        </button>
+                        {/* ดึงเนื้อหาขั้นตอนจาก Component ที่แยกไว้ */}
+                        <PwaModalContent activeTab={activeTab} onClose={() => setShowModal(false)} />
                     </div>
                 </div>
             )}
         </>
     );
-}
+});
+
+export default PwaInstallPopup;

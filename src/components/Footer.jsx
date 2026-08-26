@@ -1,15 +1,14 @@
 import { Link } from 'react-router-dom';
 import umonglogo from '../assets/umong1municipal_icon_notra.webp';
 
-export default function Footer() {
+export default function Footer({ onOpenInstallModal, onClick }) {
     return (
         <footer className="w-full bg-[#f8fafc] pt-16 pb-8 px-12 md:px-32 border-t border-[#e2e8f0]">
             <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-12 md:gap-20 items-start">
 
-                {/* ================= ฝั่งซ้าย: โลโก้ + ชื่อโรงเรียน (บรรทัดเดียว) + ที่อยู่ ================= */}
+                {/* ฝั่งซ้าย: โลโก้ + ชื่อโรงเรียน + ที่อยู่ */}
                 <div className="w-full md:w-[55%] flex flex-col items-start">
 
-                    {/* แถวบน: โลโก้ + ชื่อโรงเรียน */}
                     <div className="flex items-center gap-4 mb-3">
                         <div className="p-3 bg-white rounded-2xl shadow-[0_4px_10px_rgba(0,0,0,0.05)] border border-[#e2e8f0]/60 flex items-center justify-center">
                             <img
@@ -26,12 +25,9 @@ export default function Footer() {
                         </h3>
                     </div>
 
-                    {/* รายละเอียดส่วนล่าง */}
                     <div className="w-full">
-                        {/* เส้นคั่น */}
                         <div className="w-full h-[1px] bg-[#cbd5e1] mb-4"></div>
 
-                        {/* ที่อยู่ */}
                         <p className="text-[#64748b] text-sm leading-relaxed font-['Nunito'] font-semibold">
                             ที่อยู่ 1/1 หมู่ 1 ตำบลอุโมงค์ อำเภอเมือง<br />
                             จังหวัดลำพูน รหัสไปรษณีย์ 51150<br />
@@ -40,8 +36,7 @@ export default function Footer() {
                     </div>
                 </div>
 
-
-                {/* ================= ฝั่งขวา: เมนู 2 คอลัมน์ ================= */}
+                {/* ฝั่งขวา: เมนู 2 คอลัมน์ */}
                 <div className="w-full md:w-[45%] grid grid-cols-1 sm:grid-cols-2 gap-8 md:gap-12">
 
                     {/* คอลัมน์ย่อย 1: เกี่ยวกับโรงเรียน */}
@@ -65,6 +60,19 @@ export default function Footer() {
                             <li>
                                 <a href="https://umong1municipal.ac.th/" target="_blank" rel="noopener noreferrer" className="hover:text-[#7c3aed] transition-colors flex items-center gap-1.5">
                                     <span className="text-xs text-[#7c3aed]">▸</span> ข้อมูลสถานศึกษา
+                                </a>
+                            </li>
+                            {/* ปุ่มเรียกเปิด Modal ติดตั้งแอป */}
+                            <li>
+                                <a
+                                    href="#install-guide"
+                                    onClick={(e) => {
+                                        e.preventDefault(); // ป้องกันไม่ให้เว็บกระโดดหรือเปลี่ยนหน้า
+                                        onOpenInstallModal();
+                                    }}
+                                    className="hover:text-[#7c3aed] transition-colors flex items-center gap-1.5 font-bold text-sm text-[#6d6a8a]"
+                                >
+                                    <span className="text-xs text-[#7c3aed]">▸</span> วิธีติดตั้งแอปบนหน้าจอมือถือ
                                 </a>
                             </li>
                         </ul>
