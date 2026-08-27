@@ -75,6 +75,10 @@ export default function Footer({ onOpenInstallModal, onClick }) {
                                     <span className="text-xs text-[#7c3aed]">▸</span> วิธีติดตั้งแอปบนหน้าจอมือถือ
                                 </a>
                             </li>
+                            <li className="text-xs text-slate-400 font-medium pl-3.5">
+                                เวอร์ชัน 1.0.1
+                            </li>
+
                         </ul>
                     </div>
 
