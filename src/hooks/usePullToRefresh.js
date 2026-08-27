@@ -27,7 +27,11 @@ export default function usePullToRefresh({ onRefresh, threshold = 110, maxPull =
             const currentY = e.touches[0].clientY;
             const diff = currentY - startYRef.current;
 
-            if (diff < 5) {
+            // 🛠️ กำหนดระยะ Deadzone (เช่น 35 พิกเซล) 
+            // ถ้านิ้วขยับลงมาไม่ถึงระยะนี้ ตัวหมุนจะไม่โผล่ ป้องกันการแตะเลื่อนนิดเดียวแล้วเด้ง
+            const DEADZONE = 35;
+
+            if (diff < DEADZONE) {
                 currentDistanceRef.current = 0;
                 if (spinnerRef.current) {
                     spinnerRef.current.style.transform = `translateY(-60px)`;
@@ -39,15 +43,16 @@ export default function usePullToRefresh({ onRefresh, threshold = 110, maxPull =
             if (window.scrollY <= 1 && diff > 0) {
                 if (e.cancelable) e.preventDefault();
 
-                // ปรับสูตรความหนืดใหม่ ให้ลากถึง threshold (110) ได้จริงและนุ่มนวล
-                const resistanceDistance = Math.min(maxPull, diff * 0.6);
+                // เอาค่า diff มาหักลบด้วย DEADZONE เพื่อให้การเคลื่อนไหวเริ่มต้นช้าลงและหนืดขึ้น
+                const pullAmount = diff - DEADZONE;
+                const resistanceDistance = Math.min(maxPull, pullAmount * 0.5); // ปรับตัวคูณความหนืดได้ (เช่น 0.4 หรือ 0.5)
 
                 currentDistanceRef.current = resistanceDistance;
 
-                // อัปเดต UI ผ่าน DOM ตรงๆ เพื่อความลื่นไหล
+                // อัปเดต UI ผ่าน DOM ตรงๆ
                 if (spinnerRef.current) {
                     spinnerRef.current.style.transform = `translateY(${resistanceDistance}px)`;
-                    spinnerRef.current.style.opacity = resistanceDistance > 15 ? '1' : '0';
+                    spinnerRef.current.style.opacity = resistanceDistance > 10 ? '1' : '0';
 
                     const svg = spinnerRef.current.querySelector('svg');
                     if (svg) {
