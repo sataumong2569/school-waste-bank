@@ -1,23 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
 
-export default function usePullToRefresh({ onRefresh, threshold = 80, maxPull = 140 } = {}) {
-    const [pullDistance, setPullDistance] = useState(0);
+export default function usePullToRefresh({ onRefresh, threshold = 110, maxPull = 200 } = {}) {
     const [isRefreshing, setIsRefreshing] = useState(false);
 
+    const spinnerRef = useRef(null);
     const isPullingRef = useRef(false);
     const startYRef = useRef(0);
-    // ใช้ Ref เพื่อเก็บค่าล่าสุด ป้องกันปัญหา Stale Closure ใน Event Listener
     const currentDistanceRef = useRef(0);
 
     useEffect(() => {
-        // หากกำลังโหลดอยู่ ไม่ต้องดักจับ Event ลากซ้ำซ้อน
         if (isRefreshing) return;
 
         const handleTouchStart = (e) => {
-            if (window.scrollY === 0) {
+            if (window.scrollY <= 1) {
                 startYRef.current = e.touches[0].clientY;
                 isPullingRef.current = true;
                 currentDistanceRef.current = 0;
+            } else {
+                isPullingRef.current = false;
             }
         };
 
@@ -27,22 +27,33 @@ export default function usePullToRefresh({ onRefresh, threshold = 80, maxPull = 
             const currentY = e.touches[0].clientY;
             const diff = currentY - startYRef.current;
 
-            if (diff < 0) {
-                isPullingRef.current = false;
+            if (diff < 5) {
                 currentDistanceRef.current = 0;
-                setPullDistance(0);
+                if (spinnerRef.current) {
+                    spinnerRef.current.style.transform = `translateY(-60px)`;
+                    spinnerRef.current.style.opacity = '0';
+                }
                 return;
             }
 
-            if (window.scrollY === 0 && diff > 0) {
+            if (window.scrollY <= 1 && diff > 0) {
                 if (e.cancelable) e.preventDefault();
 
-                // สูตรคำนวณแรงต้านของคุณ (ปรับให้หนืดกำลังดี)
-                const progress = diff / window.innerHeight;
-                const resistanceDistance = Math.min(maxPull, diff * (1 - progress * 1.5));
+                // ปรับสูตรความหนืดใหม่ ให้ลากถึง threshold (110) ได้จริงและนุ่มนวล
+                const resistanceDistance = Math.min(maxPull, diff * 0.6);
 
-                currentDistanceRef.current = resistanceDistance; // อัปเดตค่าเข้า Ref ทันที
-                setPullDistance(resistanceDistance);
+                currentDistanceRef.current = resistanceDistance;
+
+                // อัปเดต UI ผ่าน DOM ตรงๆ เพื่อความลื่นไหล
+                if (spinnerRef.current) {
+                    spinnerRef.current.style.transform = `translateY(${resistanceDistance}px)`;
+                    spinnerRef.current.style.opacity = resistanceDistance > 15 ? '1' : '0';
+
+                    const svg = spinnerRef.current.querySelector('svg');
+                    if (svg) {
+                        svg.style.transform = `rotate(${resistanceDistance * 3}deg)`;
+                    }
+                }
             }
         };
 
@@ -50,43 +61,52 @@ export default function usePullToRefresh({ onRefresh, threshold = 80, maxPull = 
             if (!isPullingRef.current) return;
             isPullingRef.current = false;
 
-            // อ่านค่าจาก Ref ตัวล่าสุด ทำให้เงื่อนไขนี้แม่นยำ 100%
-            if (currentDistanceRef.current >= threshold && window.scrollY === 0) {
+            // ตรวจสอบว่าดึงถึง threshold (110) หรือยัง
+            if (currentDistanceRef.current >= threshold && window.scrollY <= 1) {
                 setIsRefreshing(true);
-                setPullDistance(threshold * 0.8); // ล็อกค้างไว้เท่ ๆ แบบแอปดัง
+
+                // ค้างตัวหมุนไว้
+                if (spinnerRef.current) {
+                    spinnerRef.current.style.transform = `translateY(${threshold * 0.8}px)`;
+                    spinnerRef.current.style.opacity = '1';
+                    const svg = spinnerRef.current.querySelector('svg');
+                    if (svg) svg.classList.add('animate-spin');
+                }
 
                 if (onRefresh) {
-                    try {
-                        await onRefresh();
-                    } catch (error) {
-                        console.error("Refresh failed:", error);
-                    }
-                    // โหลดเสร็จค่อยเคลียร์ค่ากลับที่เดิม
+                    try { await onRefresh(); } catch (e) { }
                     setIsRefreshing(false);
-                    setPullDistance(0);
+                    resetSpinner();
                 } else {
-                    // กรณีไม่มี onRefresh ให้หน่วงเวลารอรีโหลด โดยไม่ต้องเคลียร์ State เพื่อให้ Spinner ค้างไว้จนหน้าเว็บดับไปเอง
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    // หน่วงเวลาให้เห็นสปินเนอร์หมุนแป๊บหนึ่ง แล้วสั่งรีเฟรชหน้าเว็บจริง
+                    await new Promise(resolve => setTimeout(resolve, 800));
                     window.location.reload();
                 }
             } else {
-                // ถ้าดึงไม่ถึงระยะ ให้ดีดกลับทันที
-                currentDistanceRef.current = 0;
-                setPullDistance(0);
+                resetSpinner();
             }
         };
 
-        window.addEventListener('touchstart', handleTouchStart, { passive: false });
+        const resetSpinner = () => {
+            currentDistanceRef.current = 0;
+            if (spinnerRef.current) {
+                spinnerRef.current.style.transform = `translateY(-60px)`;
+                spinnerRef.current.style.opacity = '0';
+                const svg = spinnerRef.current.querySelector('svg');
+                if (svg) svg.classList.remove('animate-spin');
+            }
+        };
+
+        window.addEventListener('touchstart', handleTouchStart, { passive: true });
         window.addEventListener('touchmove', handleTouchMove, { passive: false });
-        window.addEventListener('touchend', handleTouchEnd, { passive: false });
+        window.addEventListener('touchend', handleTouchEnd, { passive: true });
 
         return () => {
             window.removeEventListener('touchstart', handleTouchStart);
             window.removeEventListener('touchmove', handleTouchMove);
             window.removeEventListener('touchend', handleTouchEnd);
         };
-        // ลบ pullDistance ออกจาก Dependency เพื่อไม่ให้ผูก Event ใหม่ทุก ๆ พิกเซลที่นิ้วขยับ (ช่วยเรื่อง Performance)
     }, [threshold, maxPull, isRefreshing, onRefresh]);
 
-    return { pullDistance, isRefreshing };
+    return { spinnerRef, isRefreshing };
 }

@@ -5,17 +5,16 @@ import { DEFAULT_PRICES, WASTE_CATEGORIES } from './utils/wasteConfig';
 
 const AppContext = createContext();
 
+// ฟังก์ชันช่วยปัดเศษทศนิยม 2 ตำแหน่งและคงชนิดเป็น Number
+const round2 = (num) => Math.round((Number(num) || 0) * 100) / 100;
+
 export const AppProvider = ({ children }) => {
-    // ==========================================
-    // STATE: ข้อมูลทั้งหมดของระบบ
-    // ==========================================
     const [members, setMembers] = useState([]);
     const [pricing, setPricing] = useState(DEFAULT_PRICES);
     const [priceUpdatedAt, setPriceUpdatedAt] = useState(null);
     const [duration, setDuration] = useState({ round1: 15, round2: 25 });
     const [rewards, setRewards] = useState([]);
 
-    // ระบบบิลรวม (System Stats)
     const [sysStats, setSysStats] = useState({
         totalBalance: 0,
         totalCarbon: 0,
@@ -27,13 +26,10 @@ export const AppProvider = ({ children }) => {
 
     const [isAppLoading, setIsAppLoading] = useState(true);
 
-    // ==========================================
-    // โหลดข้อมูลจาก Firebase (โหลดครั้งเดียวตอนเปิดเว็บ)
-    // ==========================================
     useEffect(() => {
         const fetchInitialData = async () => {
             try {
-                // 1. ดึงข้อมูล Config (ราคา, รางวัล)
+                // 1. ดึงข้อมูล Config
                 const configRef = doc(db, 'system', 'config');
                 const configSnap = await getDoc(configRef);
                 if (configSnap.exists()) {
@@ -48,7 +44,7 @@ export const AppProvider = ({ children }) => {
                     await setDoc(configRef, { pricing: DEFAULT_PRICES, duration: { round1: 15, round2: 25 }, rewards: [] });
                 }
 
-                // 2. ดึงข้อมูลบิลรวมกลาง (System Stats)
+                // 2. ดึงข้อมูล System Stats
                 const statsRef = doc(db, 'system', 'stats');
                 const statsSnap = await getDoc(statsRef);
                 if (statsSnap.exists()) {
@@ -58,17 +54,13 @@ export const AppProvider = ({ children }) => {
                     await setDoc(statsRef, initialStats);
                     setSysStats(initialStats);
                 }
-
             } catch (error) {
                 console.error("Error fetching core data:", error);
             } finally {
-                // 🚀 หัวใจสำคัญ: ปลดล็อกหน้าจอโหลดทันทีที่ได้สถิติหลัก!
-                // ไม่ต้องรอโหลดรายชื่อเด็กทั้งโรงเรียน ผู้ใช้จะได้เห็นหน้าเว็บทันที
                 setIsAppLoading(false);
             }
 
-            // 3. ดึง Directory สมาชิก (ทำเป็น Background Process ภายหลัง)
-            // ระหว่างที่แอบดึงข้อมูลก้อนนี้ ผู้ใช้จะเห็นหน้า Dashboard สวยๆ ไปพลางๆ แล้ว
+            // 3. ดึง Directory สมาชิก (Background)
             try {
                 const membersRef = collection(db, 'members');
                 const membersSnap = await getDocs(membersRef);
@@ -82,51 +74,69 @@ export const AppProvider = ({ children }) => {
         fetchInitialData();
     }, []);
 
-    // ==========================================
-    // ACTIONS: ฟังก์ชันบันทึกข้อมูลแบบประหยัด Read/Write
-    // ==========================================
     const updatePricing = async (newPricing) => {
         const now = new Date();
         setPricing(newPricing);
         setPriceUpdatedAt(now);
         try {
             await updateDoc(doc(db, 'system', 'config'), { pricing: newPricing, priceUpdatedAt: now });
-        } catch (e) { }
+        } catch (e) {
+            console.error("Error updating pricing:", e);
+        }
     };
 
     const updateDuration = async (newDuration) => {
         setDuration(newDuration);
-        try { await updateDoc(doc(db, 'system', 'config'), { duration: newDuration }); } catch (e) { }
+        try {
+            await updateDoc(doc(db, 'system', 'config'), { duration: newDuration });
+        } catch (e) {
+            console.error("Error updating duration:", e);
+        }
     };
 
     const updateRewards = async (newRewards) => {
         setRewards(newRewards);
-        try { await updateDoc(doc(db, 'system', 'config'), { rewards: newRewards }); } catch (e) { }
+        try {
+            await updateDoc(doc(db, 'system', 'config'), { rewards: newRewards });
+        } catch (e) {
+            console.error("Error updating rewards:", e);
+        }
     };
 
     const addMember = async (newMember) => {
         const newId = `uid_${Date.now()}`;
         const initialBalance = parseFloat(newMember.balance) || 0;
-        const initialCarbon = parseFloat(newMember.carbonPoints) || 0;
-        const initialReward = parseFloat(newMember.rewardPoints) || 0;
+        const initialCarbon = round2(newMember.carbonPoints);
+        const initialReward = round2(newMember.rewardPoints);
 
         const memberWithId = {
-            ...newMember, id: newId, balance: initialBalance,
-            carbonPoints: initialCarbon.toFixed(2), rewardPoints: initialReward.toFixed(2), history: []
+            ...newMember,
+            id: newId,
+            balance: initialBalance,
+            carbonPoints: initialCarbon, // บันทึกเป็น Number
+            rewardPoints: initialReward, // บันทึกเป็น Number
+            history: []
         };
-
-        setMembers([...members, memberWithId]);
-        setSysStats(prev => ({
-            ...prev, totalMembers: prev.totalMembers + 1,
-            totalBalance: prev.totalBalance + initialBalance, totalCarbon: prev.totalCarbon + initialCarbon
-        }));
 
         try {
             await setDoc(doc(db, 'members', newId), memberWithId);
             await updateDoc(doc(db, 'system', 'stats'), {
-                totalMembers: increment(1), totalBalance: increment(initialBalance), totalCarbon: increment(initialCarbon)
+                totalMembers: increment(1),
+                totalBalance: increment(initialBalance),
+                totalCarbon: increment(initialCarbon)
             });
-        } catch (error) { console.error("Error adding member:", error); }
+
+            setMembers(prev => [...prev, memberWithId]);
+            setSysStats(prev => ({
+                ...prev,
+                totalMembers: prev.totalMembers + 1,
+                totalBalance: round2(prev.totalBalance + initialBalance),
+                totalCarbon: round2(prev.totalCarbon + initialCarbon)
+            }));
+        } catch (error) {
+            console.error("Error adding member:", error);
+            alert("บันทึกสมาชิกไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อ");
+        }
     };
 
     const updateMember = async (updatedMember) => {
@@ -136,22 +146,28 @@ export const AppProvider = ({ children }) => {
         const balanceDiff = (parseFloat(updatedMember.balance) || 0) - (parseFloat(oldMember.balance) || 0);
         const carbonDiff = (parseFloat(updatedMember.carbonPoints) || 0) - (parseFloat(oldMember.carbonPoints) || 0);
 
-        setMembers(members.map(m => m.id === updatedMember.id ? updatedMember : m));
-
-        if (balanceDiff !== 0 || carbonDiff !== 0) {
-            setSysStats(prev => ({
-                ...prev, totalBalance: Math.max(0, prev.totalBalance + balanceDiff), totalCarbon: Math.max(0, prev.totalCarbon + carbonDiff)
-            }));
-        }
-
         try {
             await updateDoc(doc(db, 'members', updatedMember.id), updatedMember);
             if (balanceDiff !== 0 || carbonDiff !== 0) {
                 await updateDoc(doc(db, 'system', 'stats'), {
-                    totalBalance: increment(balanceDiff), totalCarbon: increment(carbonDiff)
+                    totalBalance: increment(balanceDiff),
+                    totalCarbon: increment(carbonDiff)
                 });
             }
-        } catch (e) { console.error("Error updating member:", e); }
+
+            // อัปเดต State เมื่อบันทึกสำเร็จ
+            setMembers(prev => prev.map(m => m.id === updatedMember.id ? updatedMember : m));
+            if (balanceDiff !== 0 || carbonDiff !== 0) {
+                setSysStats(prev => ({
+                    ...prev,
+                    totalBalance: Math.max(0, round2(prev.totalBalance + balanceDiff)),
+                    totalCarbon: Math.max(0, round2(prev.totalCarbon + carbonDiff))
+                }));
+            }
+        } catch (e) {
+            console.error("Error updating member:", e);
+            alert("อัปเดตข้อมูลไม่สำเร็จ");
+        }
     };
 
     const deleteMember = async (memberId) => {
@@ -161,17 +177,22 @@ export const AppProvider = ({ children }) => {
         const moneyToDeduct = parseFloat(memberToDelete.balance) || 0;
         const carbonToDeduct = parseFloat(memberToDelete.carbonPoints) || 0;
 
-        setMembers(members.filter(m => m.id !== memberId));
-        setSysStats(prev => ({
-            ...prev, totalMembers: Math.max(0, prev.totalMembers - 1),
-            totalBalance: Math.max(0, prev.totalBalance - moneyToDeduct), totalCarbon: Math.max(0, prev.totalCarbon - carbonToDeduct)
-        }));
-
         try {
             await deleteDoc(doc(db, 'members', memberId));
             await updateDoc(doc(db, 'system', 'stats'), {
-                totalMembers: increment(-1), totalBalance: increment(-moneyToDeduct), totalCarbon: increment(-carbonToDeduct)
+                totalMembers: increment(-1),
+                totalBalance: increment(-moneyToDeduct),
+                totalCarbon: increment(-carbonToDeduct)
             });
+
+            // อัปเดต State เมื่อบันทึกสำเร็จ
+            setMembers(prev => prev.filter(m => m.id !== memberId));
+            setSysStats(prev => ({
+                ...prev,
+                totalMembers: Math.max(0, prev.totalMembers - 1),
+                totalBalance: Math.max(0, round2(prev.totalBalance - moneyToDeduct)),
+                totalCarbon: Math.max(0, round2(prev.totalCarbon - carbonToDeduct))
+            }));
         } catch (error) {
             console.error("Error deleting member:", error);
             alert("เกิดข้อผิดพลาดในการลบข้อมูล");
@@ -179,82 +200,91 @@ export const AppProvider = ({ children }) => {
     };
 
     const processDeposit = async (member, depositCart, cartTotalMoney, cartTotalCarbon) => {
-        const moneyAdded = parseFloat(cartTotalMoney);
-        const carbonAdded = parseFloat(cartTotalCarbon);
+        const moneyAdded = parseFloat(cartTotalMoney) || 0;
+        const carbonAdded = parseFloat(cartTotalCarbon) || 0;
         let weightAdded = 0;
 
         const today = new Date();
         const formattedDate = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
 
-        // เตรียมข้อมูลประวัติใหม่ของเด็ก
         const newHistoryEntries = depositCart.map(item => {
-            const w = parseFloat(item.weight) || 0;
+            const w = round2(parseFloat(item.weight) || 0);
             weightAdded += w;
-            return { type: item.item, weight: w.toFixed(1), date: formattedDate };
+            return { type: item.item, weight: w, date: formattedDate };
         });
 
         const combinedHistory = [...newHistoryEntries, ...(member.history || [])].slice(0, 10);
-        const newBalance = (parseFloat(member.balance) || 0) + moneyAdded;
-        const newCarbon = (parseFloat(member.carbonPoints) || 0) + carbonAdded;
-        const newReward = (parseFloat(member.rewardPoints) || 0) + carbonAdded;
+        const newBalance = round2((parseFloat(member.balance) || 0) + moneyAdded);
+        const newCarbon = round2((parseFloat(member.carbonPoints) || 0) + carbonAdded);
+        const newReward = round2((parseFloat(member.rewardPoints) || 0) + carbonAdded);
 
         const updatedMember = {
-            ...member, balance: newBalance, carbonPoints: newCarbon.toFixed(2),
-            rewardPoints: newReward.toFixed(2), history: combinedHistory
+            ...member,
+            balance: newBalance,
+            carbonPoints: newCarbon,
+            rewardPoints: newReward,
+            history: combinedHistory
         };
 
-        // เตรียมข้อมูลการอัปเดตบิลรวมสำหรับส่งไป Firebase
         const statsUpdates = {
             totalBalance: increment(moneyAdded),
             totalCarbon: increment(carbonAdded),
             totalWeight: increment(weightAdded)
         };
 
-        // อัปเดตหน้าจอทันที (Optimistic UI)
-        setMembers(members.map(m => m.id === updatedMember.id ? updatedMember : m));
+        depositCart.forEach(item => {
+            const w = round2(parseFloat(item.weight) || 0);
+            // แทนที่เครื่องหมายจุด (.) ด้วยขีดล่าง (_) เพื่อป้องกัน Firestore Dot-Notation Error
+            const safeItemKey = item.item.replace(/\./g, '_');
+            statsUpdates[`items.${safeItemKey}`] = increment(w);
 
-        setSysStats(prev => {
-            const nextStats = { ...prev };
-            nextStats.totalBalance = (prev.totalBalance || 0) + moneyAdded;
-            nextStats.totalCarbon = (prev.totalCarbon || 0) + carbonAdded;
-            nextStats.totalWeight = (prev.totalWeight || 0) + weightAdded;
-
-            nextStats.categories = { ...(prev.categories || {}) };
-            nextStats.items = { ...(prev.items || {}) };
-
-            depositCart.forEach(item => {
-                const w = parseFloat(item.weight) || 0;
-
-                // อัปเดตยอดแยกตามขยะแต่ละชนิด
-                nextStats.items[item.item] = (nextStats.items[item.item] || 0) + w;
-                statsUpdates[`items.${item.item}`] = increment(w);
-
-                // ค้นหาและอัปเดตยอดแยกตามหมวดหมู่หลัก
-                for (const [catKey, catVal] of Object.entries(WASTE_CATEGORIES)) {
-                    if (catVal.items.includes(item.item)) {
-                        nextStats.categories[catKey] = (nextStats.categories[catKey] || 0) + w;
-                        statsUpdates[`categories.${catKey}`] = increment(w);
-                        break;
-                    }
+            for (const [catKey, catVal] of Object.entries(WASTE_CATEGORIES)) {
+                if (catVal.items.includes(item.item)) {
+                    statsUpdates[`categories.${catKey}`] = increment(w);
+                    break;
                 }
-            });
-
-            return nextStats;
+            }
         });
 
-        // ยิงข้อมูลเก็บลง Firebase
         try {
             await updateDoc(doc(db, 'members', updatedMember.id), updatedMember);
             await updateDoc(doc(db, 'system', 'stats'), statsUpdates);
 
             const txId = `tx_${Date.now()}`;
             await setDoc(doc(db, 'transactions', txId), {
-                memberId: member.id, memberName: member.fullName, items: depositCart,
-                totalMoney: moneyAdded, totalCarbon: carbonAdded, timestamp: new Date()
+                memberId: member.id,
+                memberName: member.fullName,
+                items: depositCart,
+                totalMoney: moneyAdded,
+                totalCarbon: carbonAdded,
+                timestamp: new Date()
+            });
+
+            setMembers(prev => prev.map(m => m.id === updatedMember.id ? updatedMember : m));
+            setSysStats(prev => {
+                const nextStats = { ...prev };
+                nextStats.totalBalance = round2((prev.totalBalance || 0) + moneyAdded);
+                nextStats.totalCarbon = round2((prev.totalCarbon || 0) + carbonAdded);
+                nextStats.totalWeight = round2((prev.totalWeight || 0) + weightAdded);
+                nextStats.categories = { ...(prev.categories || {}) };
+                nextStats.items = { ...(prev.items || {}) };
+
+                depositCart.forEach(item => {
+                    const w = round2(parseFloat(item.weight) || 0);
+                    const safeItemKey = item.item.replace(/\./g, '_');
+                    nextStats.items[safeItemKey] = round2((nextStats.items[safeItemKey] || 0) + w);
+                    for (const [catKey, catVal] of Object.entries(WASTE_CATEGORIES)) {
+                        if (catVal.items.includes(item.item)) {
+                            nextStats.categories[catKey] = round2((nextStats.categories[catKey] || 0) + w);
+                            break;
+                        }
+                    }
+                });
+                return nextStats;
             });
         } catch (error) {
             console.error("Error processing deposit:", error);
-            alert("บันทึกข้อมูลไม่สมบูรณ์ กรุณาตรวจสอบอินเทอร์เน็ต");
+            alert("บันทึกข้อมูลไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ต");
         }
     };
 
