@@ -1,5 +1,5 @@
 import { Suspense, lazy, useRef } from 'react';
-import './App.css'
+import './App.css';
 import { Routes, Route } from 'react-router-dom';
 
 import Navbar from './components/Navbar';
@@ -9,6 +9,7 @@ import ScrollToTop from './components/ScrollToTop';
 import PwaInstallPopup from './components/PwaInstallPopup';
 import usePullToRefresh from './hooks/usePullToRefresh';
 import Home from './pages/Home';
+import ProtectedRoute from './components/ProtectedRoute';
 
 const Members = lazy(() => import('./pages/Members'));
 const Login = lazy(() => import('./pages/Login'));
@@ -16,16 +17,11 @@ const Settings = lazy(() => import('./pages/Settings'));
 const SystemConfig = lazy(() => import('./pages/SystemConfig'));
 
 function App() {
-
-  // สร้าง Ref เพื่อส่งคำสั่งเปิด Modal ไปยัง PwaInstallPopup
   const pwaRef = useRef(null);
-
   const { spinnerRef, isRefreshing } = usePullToRefresh({ threshold: 110 });
 
   return (
     <div className="min-h-screen bg-white font-['Nunito'] flex flex-col relative">
-
-      {/* ผูก ref เข้ากับ div นี้ */}
       <div
         ref={spinnerRef}
         className="fixed top-0 left-0 right-0 z-50 flex justify-center pointer-events-none"
@@ -46,26 +42,29 @@ function App() {
           </svg>
         </div>
       </div>
+
       <ScrollToTop />
       <Navbar />
 
       <main className="w-full flex-1">
         <Suspense fallback={<div className="w-full min-h-[80vh] bg-white"></div>}>
           <Routes>
+            {/* เส้นทางสาธารณะ (ใครก็เข้าได้) */}
             <Route path="/" element={<Home />} />
             <Route path="/members" element={<Members />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/system-config" element={<SystemConfig />} />
+
+            {/* เส้นทางควบคุมสิทธิ์ (ต้องล็อกอินเท่านั้น) */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/system-config" element={<SystemConfig />} />
+            </Route>
           </Routes>
         </Suspense>
       </main>
 
-      {/* ส่งฟังก์ชันเปิด Modal เข้าไปใน Footer */}
       <Footer onOpenInstallModal={() => pwaRef.current?.openModal()} />
       <MobileNav />
-
-      {/* วาง PwaInstallPopup ไว้ที่ระดับ Global ของ App */}
       <PwaInstallPopup ref={pwaRef} />
     </div>
   );

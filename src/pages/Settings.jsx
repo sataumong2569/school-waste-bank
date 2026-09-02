@@ -637,13 +637,13 @@ export default function Settings() {
                     {modalMode === 'deposit' && (
                         <form
                             onSubmit={handleConfirmDeposit}
-                            className="relative w-full max-w-4xl bg-white border border-[#f0f0f0] rounded-[24px] p-6 md:p-8 flex flex-col md:flex-row gap-8 shadow-[0_20px_40px_rgba(0,0,0,0.15)] animate-modal-pop max-h-[90vh]"
+                            className="relative w-full max-w-4xl bg-white border border-[#f0f0f0] rounded-[24px] p-5 md:p-8 flex flex-col md:flex-row gap-6 md:gap-8 shadow-[0_20px_40px_rgba(0,0,0,0.15)] animate-modal-pop max-h-[85vh] md:max-h-[90vh] overflow-y-auto hide-scrollbar mb-16 md:mb-0"
                         >
                             <button type="button" onClick={closeModal} className="absolute top-4 right-4 p-2 bg-[#f8f9fa] rounded-full hover:bg-[#fee2e2] hover:text-red-500 text-[#6d6a8a] transition-colors z-10"><XMarkIcon className="w-5 h-5 font-bold" /></button>
 
                             {/* ฝั่งซ้าย: ฟอร์มค้นหาและเพิ่มของลงตะกร้า */}
-                            <div className="w-full md:w-1/2 flex flex-col gap-5 overflow-y-auto hide-scrollbar pr-2">
-                                <div className="flex items-center gap-2 mb-2">
+                            <div className="w-full md:w-1/2 flex flex-col gap-4 md:gap-5">
+                                <div className="flex items-center gap-2 mb-1 md:mb-2">
                                     <ScaleIcon className="w-6 h-6 text-[#10b981] stroke-2" />
                                     <h2 className="font-['Fredoka_One'] text-xl text-[#1e1b4b]">รับฝากขยะ (ตะกร้า)</h2>
                                 </div>
@@ -664,7 +664,7 @@ export default function Settings() {
                                         <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" />
                                     </div>
                                     {depositMemberSearch && !selectedDepositMember && (
-                                        <div className="bg-white border border-[#e2e8f0] rounded-lg mt-1 max-h-32 overflow-y-auto shadow-sm absolute z-20 w-[calc(50%-2rem)]">
+                                        <div className="bg-white border border-[#e2e8f0] rounded-lg mt-1 max-h-32 overflow-y-auto shadow-sm absolute z-20 w-[calc(100%-2rem)] md:w-[calc(50%-2rem)]">
                                             {members.filter(m => m.fullName.includes(depositMemberSearch)).map(m => (
                                                 <div
                                                     key={m.id}
@@ -708,7 +708,7 @@ export default function Settings() {
                                     type="button"
                                     onClick={handleAddToCart}
                                     disabled={!selectedDepositMember || !currentDepositItem.weight}
-                                    className="w-full bg-[#f8fafc] text-[#3b82f6] border border-[#3b82f6] hover:bg-[#eff6ff] font-bold text-sm py-3 rounded-xl transition-all duration-200 mt-2 cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+                                    className="w-full bg-[#f8fafc] text-[#3b82f6] border border-[#3b82f6] hover:bg-[#eff6ff] font-bold text-sm py-3 rounded-xl transition-all duration-200 mt-1 cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
                                 >
                                     + เพิ่มลงรายการ
                                 </button>
@@ -717,10 +717,10 @@ export default function Settings() {
                             <div className="hidden md:block w-[1px] bg-[#f0f0f0]"></div>
 
                             {/* ฝั่งขวา: รายการในตะกร้า & สรุปยอด */}
-                            <div className="w-full md:w-1/2 flex flex-col h-[400px] md:h-auto">
-                                <h3 className="font-bold text-[#0f172a] text-sm mb-3">รายการรับฝากปัจจุบัน</h3>
+                            <div className="w-full md:w-1/2 flex flex-col h-[280px] md:h-auto">
+                                <h3 className="font-bold text-[#0f172a] text-sm mb-2 md:mb-3">รายการรับฝากปัจจุบัน</h3>
 
-                                <div className="flex-1 overflow-y-auto bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3 flex flex-col gap-2 hide-scrollbar mb-4">
+                                <div className="flex-1 overflow-y-auto bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3 flex flex-col gap-2 hide-scrollbar mb-3 md:mb-4">
                                     {depositCart.length === 0 ? (
                                         <div className="text-center text-[#94a3b8] text-xs font-bold py-10 mt-auto mb-auto">ยังไม่มีรายการขยะในตะกร้า</div>
                                     ) : (
@@ -736,22 +736,22 @@ export default function Settings() {
                                     )}
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3 mb-4 shrink-0">
-                                    <div className="flex flex-col items-center bg-white py-3 rounded-xl shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] border border-[#e2e8f0]">
+                                <div className="grid grid-cols-2 gap-3 mb-3 md:mb-4 shrink-0">
+                                    <div className="flex flex-col items-center bg-white py-2.5 md:py-3 rounded-xl shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] border border-[#e2e8f0]">
                                         <span className="text-[10px] font-bold text-[#64748b] mb-1">ยอดเงินรวม</span>
-                                        <span className="font-['Fredoka_One'] text-2xl text-[#10b981]">฿ {cartTotalMoney}</span>
+                                        <span className="font-['Fredoka_One'] text-xl md:text-2xl text-[#10b981]">฿ {cartTotalMoney}</span>
                                     </div>
-                                    <div className="flex flex-col items-center bg-white py-3 rounded-xl shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] border border-[#e2e8f0]">
+                                    <div className="flex flex-col items-center bg-white py-2.5 md:py-3 rounded-xl shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] border border-[#e2e8f0]">
                                         <span className="text-[10px] font-bold text-[#64748b] mb-1">คาร์บอน / แต้ม</span>
-                                        <span className="font-['Fredoka_One'] text-xl text-[#3b82f6]">{cartTotalCarbon}</span>
+                                        <span className="font-['Fredoka_One'] text-lg md:text-xl text-[#3b82f6]">{cartTotalCarbon}</span>
                                     </div>
                                 </div>
 
                                 <button
                                     type="submit"
                                     disabled={depositCart.length === 0 || isProcessingDeposit}
-                                    className={`w-full text-white font-bold text-sm py-4 rounded-xl transition-all duration-200 shrink-0 
-                                        ${depositCart.length === 0 || isProcessingDeposit
+                                    className={`w-full text-white font-bold text-sm py-3.5 md:py-4 rounded-xl transition-all duration-200 shrink-0 
+                    ${depositCart.length === 0 || isProcessingDeposit
                                             ? 'bg-gray-400 cursor-not-allowed opacity-50'
                                             : 'bg-[#10b981] hover:bg-[#059669] active:scale-[0.98] shadow-[0_4px_10px_rgba(16,185,129,0.3)] cursor-pointer'
                                         }`}
