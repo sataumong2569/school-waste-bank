@@ -13,6 +13,7 @@ import { useApp } from '../AppContext';
 import { uploadImageToCloudinary } from '../utils/uploadImage';
 import { getCroppedImg } from '../utils/cropImage';
 import { getOptimizedImageUrl } from '../utils/uploadImage';
+import ExportModal from '../components/ExportModal';
 
 export default function Settings() {
 
@@ -32,7 +33,12 @@ export default function Settings() {
 
     const { members, addMember, updateMember, deleteMember, pricing, sysStats, processDeposit } = useApp();
 
-    const filteredMembers = members.filter(member => member.fullName.includes(searchTerm) || member.grade.includes(searchTerm));
+    const filteredMembers = members.filter(member => {
+        const term = searchTerm.toLowerCase();
+        const name = (member.fullName || '').toLowerCase();
+        const grade = (member.grade || '').toLowerCase();
+        return name.includes(term) || grade.includes(term);
+    })
     const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
     const displayedMembers = filteredMembers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
@@ -92,7 +98,12 @@ export default function Settings() {
         document.body.style.overflow = 'unset';
     };
 
-    const handleExport = () => { alert("ระบบจำลอง: ส่งออกข้อมูลเป็นไฟล์ Excel (.csv) สำเร็จ!"); };
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+
+
+    const handleExport = () => {
+        setIsExportModalOpen(true);
+    };
 
     const handleAddToCart = () => {
         if (!currentDepositItem.weight || currentDepositItem.weight <= 0) return;
@@ -409,7 +420,7 @@ export default function Settings() {
                                                         min={1}
                                                         max={3}
                                                         step={0.1}
-                                                        onChange={(e) => setZoom(e.target.value)}
+                                                        onChange={(e) => setZoom(parseFloat(e.target.value))}
                                                         className="flex-1 accent-[#3b82f6]"
                                                     />
                                                     <button type="button" onClick={() => setImageSrc(null)} className="text-[10px] font-bold text-red-500 hover:text-red-600 px-2 py-1 bg-red-50 rounded-lg whitespace-nowrap">ยกเลิก</button>
@@ -751,8 +762,16 @@ export default function Settings() {
                         </form>
                     )}
 
+
                 </div>
+
             )}
+            {/* วาง ExportModal ไว้ท้ายสุดของหน้า */}
+            <ExportModal
+                isOpen={isExportModalOpen}
+                onClose={() => setIsExportModalOpen(false)}
+                members={members}
+            />
         </div>
     )
 }
