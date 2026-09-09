@@ -8,6 +8,21 @@ const AppContext = createContext();
 // ฟังก์ชันช่วยปัดเศษทศนิยม 2 ตำแหน่งและคงชนิดเป็น Number
 const round2 = (num) => Math.round((Number(num) || 0) * 100) / 100;
 
+// ========================================================
+// [QUOTA-TRACK] ฟังก์ชันแสดง Log ตรวจจับโควตา Real-time
+// ========================================================
+const logQuota = (action, count, detail = '') => {
+    if (import.meta.env.DEV) {
+        const color = action.includes('WRITE') ? '#ef4444' : '#3b82f6';
+        console.log(
+            `%c[Firestore ${action}]%c +${count} docs %c(${detail})`,
+            `background:${color};color:white;font-weight:bold;border-radius:3px;padding:2px 5px;`,
+            'color:#10b981;font-weight:bold;margin-left:4px;',
+            'color:#64748b;'
+        );
+    }
+};
+
 export const AppProvider = ({ children }) => {
     const [members, setMembers] = useState([]);
     const [pricing, setPricing] = useState(DEFAULT_PRICES);
@@ -32,6 +47,10 @@ export const AppProvider = ({ children }) => {
                 // 1. ดึงข้อมูล Config
                 const configRef = doc(db, 'system', 'config');
                 const configSnap = await getDoc(configRef);
+
+                // [QUOTA-TRACK] ดักจับการอ่าน config 1 doc
+                logQuota('READ', 1, 'system/config');
+
                 if (configSnap.exists()) {
                     const data = configSnap.data();
                     if (data.pricing) setPricing(data.pricing);
@@ -42,16 +61,27 @@ export const AppProvider = ({ children }) => {
                     if (data.rewards) setRewards(data.rewards);
                 } else {
                     await setDoc(configRef, { pricing: DEFAULT_PRICES, duration: { round1: 15, round2: 25 }, rewards: [] });
+
+                    // [QUOTA-TRACK] ดักจับการเขียนเริ่มต้น config 1 doc
+                    logQuota('WRITE', 1, 'init system/config');
                 }
 
                 // 2. ดึงข้อมูล System Stats
                 const statsRef = doc(db, 'system', 'stats');
                 const statsSnap = await getDoc(statsRef);
+
+                // [QUOTA-TRACK] ดักจับการอ่าน stats 1 doc
+                logQuota('READ', 1, 'system/stats');
+
                 if (statsSnap.exists()) {
                     setSysStats(statsSnap.data());
                 } else {
                     const initialStats = { totalBalance: 0, totalCarbon: 0, totalMembers: 0, totalWeight: 0, categories: {}, items: {} };
                     await setDoc(statsRef, initialStats);
+
+                    // [QUOTA-TRACK] ดักจับการเขียนเริ่มต้น stats 1 doc
+                    logQuota('WRITE', 1, 'init system/stats');
+
                     setSysStats(initialStats);
                 }
             } catch (error) {
@@ -64,6 +94,10 @@ export const AppProvider = ({ children }) => {
             try {
                 const membersRef = collection(db, 'members');
                 const membersSnap = await getDocs(membersRef);
+
+                // [QUOTA-TRACK] ดักจับการอ่านรายชื่อสมาชิกทั้งหมด
+                logQuota('READ', membersSnap.size, `members list (${membersSnap.size} คน)`);
+
                 const loadedMembers = membersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 setMembers(loadedMembers);
             } catch (error) {
@@ -80,6 +114,9 @@ export const AppProvider = ({ children }) => {
         setPriceUpdatedAt(now);
         try {
             await updateDoc(doc(db, 'system', 'config'), { pricing: newPricing, priceUpdatedAt: now });
+
+            // [QUOTA-TRACK] ดักจับการอัปเดตราคา
+            logQuota('WRITE', 1, 'update pricing');
         } catch (e) {
             console.error("Error updating pricing:", e);
         }
@@ -89,6 +126,9 @@ export const AppProvider = ({ children }) => {
         setDuration(newDuration);
         try {
             await updateDoc(doc(db, 'system', 'config'), { duration: newDuration });
+
+            // [QUOTA-TRACK] ดักจับการอัปเดตรอบเวลา
+            logQuota('WRITE', 1, 'update duration');
         } catch (e) {
             console.error("Error updating duration:", e);
         }
@@ -98,6 +138,9 @@ export const AppProvider = ({ children }) => {
         setRewards(newRewards);
         try {
             await updateDoc(doc(db, 'system', 'config'), { rewards: newRewards });
+
+            // [QUOTA-TRACK] ดักจับการอัปเดตของรางวัล
+            logQuota('WRITE', 1, 'update rewards');
         } catch (e) {
             console.error("Error updating rewards:", e);
         }
@@ -113,8 +156,8 @@ export const AppProvider = ({ children }) => {
             ...newMember,
             id: newId,
             balance: initialBalance,
-            carbonPoints: initialCarbon, // บันทึกเป็น Number
-            rewardPoints: initialReward, // บันทึกเป็น Number
+            carbonPoints: initialCarbon,
+            rewardPoints: initialReward,
             history: []
         };
 
@@ -125,6 +168,9 @@ export const AppProvider = ({ children }) => {
                 totalBalance: increment(initialBalance),
                 totalCarbon: increment(initialCarbon)
             });
+
+            // [QUOTA-TRACK] ดักจับการเพิ่มสมาชิกใหม่และอัปเดตสถิติรวม (รวม 2 writes)
+            logQuota('WRITE', 2, 'add member + stats');
 
             setMembers(prev => [...prev, memberWithId]);
             setSysStats(prev => ({
@@ -148,14 +194,19 @@ export const AppProvider = ({ children }) => {
 
         try {
             await updateDoc(doc(db, 'members', updatedMember.id), updatedMember);
+            let writeCount = 1;
+
             if (balanceDiff !== 0 || carbonDiff !== 0) {
                 await updateDoc(doc(db, 'system', 'stats'), {
                     totalBalance: increment(balanceDiff),
                     totalCarbon: increment(carbonDiff)
                 });
+                writeCount += 1;
             }
 
-            // อัปเดต State เมื่อบันทึกสำเร็จ
+            // [QUOTA-TRACK] ดักจับการอัปเดตสมาชิก (และสถิติหากมีการเปลี่ยนยอด)
+            logQuota('WRITE', writeCount, 'update member' + (writeCount > 1 ? ' + stats' : ''));
+
             setMembers(prev => prev.map(m => m.id === updatedMember.id ? updatedMember : m));
             if (balanceDiff !== 0 || carbonDiff !== 0) {
                 setSysStats(prev => ({
@@ -185,7 +236,9 @@ export const AppProvider = ({ children }) => {
                 totalCarbon: increment(-carbonToDeduct)
             });
 
-            // อัปเดต State เมื่อบันทึกสำเร็จ
+            // [QUOTA-TRACK] ดักจับการลบสมาชิกและอัปเดตสถิติรวม (รวม 2 writes)
+            logQuota('WRITE', 2, 'delete member + stats');
+
             setMembers(prev => prev.filter(m => m.id !== memberId));
             setSysStats(prev => ({
                 ...prev,
@@ -234,7 +287,6 @@ export const AppProvider = ({ children }) => {
 
         depositCart.forEach(item => {
             const w = round2(parseFloat(item.weight) || 0);
-            // แทนที่เครื่องหมายจุด (.) ด้วยขีดล่าง (_) เพื่อป้องกัน Firestore Dot-Notation Error
             const safeItemKey = item.item.replace(/\./g, '_');
             statsUpdates[`items.${safeItemKey}`] = increment(w);
 
@@ -259,6 +311,9 @@ export const AppProvider = ({ children }) => {
                 totalCarbon: carbonAdded,
                 timestamp: new Date()
             });
+
+            // [QUOTA-TRACK] ดักจับการฝากขยะ: อัปเดตสมาชิก + สถิติ + บันทึกธุรกรรม (รวม 3 writes)
+            logQuota('WRITE', 3, 'process deposit: member + stats + transaction');
 
             setMembers(prev => prev.map(m => m.id === updatedMember.id ? updatedMember : m));
             setSysStats(prev => {

@@ -71,8 +71,8 @@ export default function MobileNav() {
                             key={item.path}
                             to={item.path}
                             className={`flex flex-col items-center justify-center w-16 h-11 rounded-full transition-all duration-200 font-['Prompt'] ${isActive
-                                    ? item.activeClass
-                                    : 'bg-transparent text-slate-500 hover:bg-white/60 hover:text-slate-700 active:scale-95'
+                                ? item.activeClass
+                                : 'bg-transparent text-slate-500 hover:bg-white/60 hover:text-slate-700 active:scale-95'
                                 }`}
                         >
                             <Icon className="w-4 h-4 mb-0.5 transition-transform" />
