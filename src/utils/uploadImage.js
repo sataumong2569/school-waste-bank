@@ -34,15 +34,17 @@ export const uploadImageToCloudinary = async (file) => {
     }
 };
 
-// ฟังก์ชันสำหรับแปลง URL ของ Cloudinary ให้บีบอัดและย่อขนาดอัตโนมัติ
-export const getOptimizedImageUrl = (url, size = 150) => {
-    // ถ้าไม่มี URL หรือไม่ใช่รูปจาก Cloudinary ให้คืนค่าเดิมกลับไป
+// ฟังก์ชันแปลง URL ของ Cloudinary (รองรับทั้งแบบตัดสี่เหลี่ยม และแบบปรับความกว้างคงสัดส่วน)
+export const getOptimizedImageUrl = (url, width = 150, height = null) => {
     if (!url || !url.includes('cloudinary.com')) return url;
 
-    // แทรกคำสั่ง: c_fill (ครอบตัด), w_ (กว้าง), h_ (สูง), q_auto (บีบอัดออโต้), f_auto (แปลงเป็น WebP/AVIF ออโต้)
     const parts = url.split('/upload/');
     if (parts.length === 2) {
-        return `${parts[0]}/upload/c_fill,w_${size},h_${size},q_auto,f_auto/${parts[1]}`;
+        const transform = height
+            ? `c_fill,w_${width},h_${height},q_auto,f_auto`
+            : `c_scale,w_${width},q_auto,f_auto`;
+
+        return `${parts[0]}/upload/${transform}/${parts[1]}`;
     }
     return url;
 };

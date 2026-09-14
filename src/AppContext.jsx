@@ -343,12 +343,75 @@ export const AppProvider = ({ children }) => {
         }
     };
 
+    // ========================================================
+    // ฟังก์ชันแลกของรางวัล: ตัดแต้มสมาชิก และลดสต็อกของรางวัล
+    // ========================================================
+    const redeemReward = async (memberId, rewardItem) => {
+        const targetMember = members.find(m => m.id === memberId);
+        if (!targetMember) return { success: false, message: "ไม่พบข้อมูลสมาชิก" };
+
+        const currentPoints = Number(targetMember.rewardPoints) || 0;
+        const requiredPoints = Number(rewardItem.points) || 0;
+
+        if (currentPoints < requiredPoints) {
+            return { success: false, message: "แต้มสะสมไม่เพียงพอสำหรับการแลกรางวัลนี้" };
+        }
+        if (Number(rewardItem.stock) <= 0) {
+            return { success: false, message: "ของรางวัลนี้หมดสต็อกแล้ว" };
+        }
+
+        try {
+            const today = new Date();
+            const formattedDate = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+
+            const newRewardPoints = round2(currentPoints - requiredPoints);
+            const redemptionEntry = {
+                type: `แลก: ${rewardItem.name}`,
+                weight: 0,
+                date: formattedDate,
+                pointsSpent: requiredPoints
+            };
+            const updatedHistory = [redemptionEntry, ...(targetMember.history || [])].slice(0, 10);
+
+            // 1. อัปเดตข้อมูลสมาชิกใน Firestore
+            const memberRef = doc(db, 'members', memberId);
+            await updateDoc(memberRef, {
+                rewardPoints: newRewardPoints,
+                history: updatedHistory
+            });
+
+            // 2. อัปเดตสต็อกของรางวัลใน system/config
+            const updatedRewards = rewards.map(item =>
+                item.id === rewardItem.id ? { ...item, stock: Math.max(0, Number(item.stock) - 1) } : item
+            );
+            const configRef = doc(db, 'system', 'config');
+            await updateDoc(configRef, { rewards: updatedRewards });
+
+            // [QUOTA-TRACK] ดักจับการแลกของรางวัล (อัปเดตสมาชิก 1 + อัปเดตสต็อก config 1 = 2 writes)
+            logQuota('WRITE', 2, `redeem reward: ${rewardItem.name} (-${requiredPoints} pts)`);
+
+            // 3. อัปเดต State ภายในแอป
+            setMembers(prev => prev.map(m => m.id === memberId ? {
+                ...m,
+                rewardPoints: newRewardPoints,
+                history: updatedHistory
+            } : m));
+            setRewards(updatedRewards);
+
+            return { success: true, message: `แลก ${rewardItem.name} สำเร็จ!` };
+        } catch (error) {
+            console.error("Error redeeming reward:", error);
+            return { success: false, message: "เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง" };
+        }
+    };
+
     const contextValue = useMemo(() => ({
         isAppLoading, sysStats,
         members, setMembers, addMember, updateMember, processDeposit, deleteMember,
         pricing, updatePricing, priceUpdatedAt,
         duration, updateDuration,
-        rewards, updateRewards
+        rewards, updateRewards,
+        redeemReward // ส่งฟังก์ชันออกไปให้คอมโพเนนต์อื่นเรียกใช้
     }), [isAppLoading, sysStats, members, pricing, priceUpdatedAt, duration, rewards]);
 
     return (
