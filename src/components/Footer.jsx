@@ -76,7 +76,7 @@ export default function Footer({ onOpenInstallModal, onClick }) {
                                 </a>
                             </li>
                             <li className="text-xs text-slate-400 font-medium pl-3.5">
-                                เวอร์ชัน 1.0.1
+                                เวอร์ชัน 1.0.4
                             </li>
 
                         </ul>

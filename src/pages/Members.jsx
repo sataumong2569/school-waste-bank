@@ -3,17 +3,29 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import {
     XMarkIcon, MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon,
     UsersIcon, GiftIcon, ArrowUpTrayIcon, CalendarDaysIcon, ArrowRightIcon,
-    BanknotesIcon, GlobeAmericasIcon, CheckBadgeIcon
+    BanknotesIcon, GlobeAmericasIcon, CheckBadgeIcon,
+    TrophyIcon, StarIcon, TicketIcon, SparklesIcon, HeartIcon, FireIcon, BookmarkIcon
 } from '@heroicons/react/24/outline';
 
 import { auth } from '../firebase'; // 1. นำเข้า auth เพื่อตรวจสอบสิทธิ์แอดมิน
 import { useApp } from '../AppContext';
 import { getOptimizedImageUrl } from '../utils/uploadImage';
 
+const REWARD_ICON_MAP = {
+    Gift: GiftIcon,
+    Trophy: TrophyIcon,
+    Star: StarIcon,
+    Ticket: TicketIcon,
+    Sparkles: SparklesIcon,
+    Heart: HeartIcon,
+    Fire: FireIcon,
+    Bookmark: BookmarkIcon,
+};
+
 export default function Members() {
 
     // 2. ดึง redeemReward เพิ่มเติมจาก useApp()
-    const { members, duration, rewards, redeemReward } = useApp();
+    const { members, duration, rewards, redeemReward, showToast, showConfirm } = useApp();
     const isAdmin = !!auth.currentUser;
     const [selectedMember, setSelectedMember] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -25,6 +37,7 @@ export default function Members() {
     const [showDurationModal, setShowDurationModal] = useState(false);
     const [showRewardsModal, setShowRewardsModal] = useState(false);
     const [isRedeemMode, setIsRedeemMode] = useState(false); // 3. เพิ่ม State สลับหน้าแลกของรางวัล
+    const [isRedeeming, setIsRedeeming] = useState(false);
 
     const membersSectionRef = useRef(null);
     const searchRef = useRef(null);
@@ -385,35 +398,35 @@ export default function Members() {
                                             </div>
                                         </div>
 
-                                        {/* 3. คาร์บอนเครดิต (สไลด์ขยายเป็นปุ่มข้อความโทนสีเหลืองตอน Hover) */}
+                                        {/* 3. คาร์บอนเครดิต (Hover เปลี่ยนสีเฉพาะแอดมิน ผู้ใช้ทั่วไปจะแสดงผลนิ่งเหมือน 2 กล่องบน) */}
                                         <div
                                             onClick={isAdmin ? () => setIsRedeemMode(true) : undefined}
-                                            className={`relative overflow-hidden rounded-2xl h-14 pl-4 pr-14 flex items-center justify-between border transition-all duration-300 group ${isAdmin
-                                                ? 'bg-amber-50/85 border-amber-200/90 shadow-[0_4px_12px_rgba(245,158,11,0.08)] hover:bg-amber-400 hover:border-amber-500 hover:shadow-[0_8px_20px_rgba(245,158,11,0.3)] cursor-pointer active:scale-[0.99]'
-                                                : 'bg-amber-50/60 border-amber-100/80 shadow-sm'
+                                            className={`relative overflow-hidden rounded-2xl h-14 pl-4 pr-14 flex items-center justify-between border transition-all duration-300 ${isAdmin
+                                                ? 'group bg-amber-50/80 border-amber-200/90 shadow-[0_4px_12px_rgba(245,158,11,0.06)] hover:bg-amber-400 hover:border-amber-500 hover:shadow-[0_8px_20px_rgba(245,158,11,0.25)] cursor-pointer active:scale-[0.99]'
+                                                : 'bg-amber-50/60 border-amber-100/80 shadow-[0_2px_8px_rgba(245,158,11,0.03)]'
                                                 }`}
                                         >
-                                            {/* ฝั่งซ้าย: แถบสีและชื่อหัวข้อ */}
+                                            {/* ฝั่งซ้าย: แถบสีและชื่อหัวข้อ (เปลี่ยนสีเฉพาะเมื่อเป็นแอดมิน) */}
                                             <div className="flex items-center gap-2.5">
-                                                <div className="w-1.5 h-5 rounded-full bg-amber-500 shadow-sm shrink-0 group-hover:bg-amber-950 transition-colors duration-300"></div>
-                                                <span className="font-bold text-sm md:text-[15px] text-slate-700 group-hover:text-amber-950 transition-colors duration-300 leading-none">
+                                                <div className={`w-1.5 h-5 rounded-full bg-amber-500 shadow-sm shrink-0 transition-colors duration-300 ${isAdmin ? 'group-hover:bg-amber-950' : ''
+                                                    }`}></div>
+                                                <span className={`font-bold text-sm md:text-[15px] text-slate-700 leading-none transition-colors duration-300 ${isAdmin ? 'group-hover:text-amber-950' : ''
+                                                    }`}>
                                                     คาร์บอนเครดิต
                                                 </span>
                                             </div>
 
-                                            {/* ฝั่งขวา: แสดงตัวเลขแต้ม (เมื่อ Hover จะเปลี่ยนเป็นข้อความ) */}
-                                            <div className="flex items-center">
-                                                <div className={`flex items-baseline justify-end gap-1.5 shrink-0 ${isAdmin ? 'group-hover:hidden' : ''}`}>
+                                            {/* ฝั่งขวา: แสดงตัวเลขแต้มสะสม */}
+                                            <div className="flex items-center shrink-0">
+                                                <div className={`flex items-baseline justify-end gap-1.5 ${isAdmin ? 'group-hover:hidden' : ''}`}>
                                                     <span className="font-['Fredoka_One'] text-xl md:text-2xl text-[#b45309] leading-none">
                                                         {(selectedMember.rewardPoints || 0).toLocaleString()}
                                                     </span>
                                                     <span className="font-bold text-xs md:text-sm text-amber-800 w-14 text-left">pts</span>
                                                 </div>
-
-
                                             </div>
 
-                                            {/* แถบขอบขวา Curve แนบไปกับมุมมนของกล่อง */}
+                                            {/* แถบขอบขวาพร้อมลูกศร (แสดงเฉพาะแอดมิน) */}
                                             {isAdmin && (
                                                 <div className="absolute right-0 top-0 bottom-0 flex items-center justify-end rounded-r-2xl pointer-events-none transition-all duration-300">
                                                     <div className="h-full flex items-center justify-center gap-1 px-3 bg-amber-200/60 rounded-l-2xl text-amber-900 transition-all duration-300 group-hover:bg-amber-500 group-hover:text-amber-950 group-hover:px-3.5">
@@ -455,41 +468,53 @@ export default function Members() {
                                     </div>
                                 </div>
                             ) : (
-                                /* =================== มุมมองที่ 2: เมนูตู้ของรางวัล =================== */
-                                <div className="flex flex-col h-full animate-fadeIn">
-                                    <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-3 pr-12">
+                                /* =================== มุมมองที่ 2: เมนูตู้ของรางวัล (Slide-in + Clean Minimal) =================== */
+                                <div
+                                    className="flex flex-col h-full"
+                                    style={{ animation: 'slideInRight 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}
+                                >
+                                    {/* Inline Keyframes เพื่อให้อนิเมชันทำงานได้ทันทีโดยไม่ต้องแก้ tailwind.config.js */}
+                                    <style>{`
+                                        @keyframes slideInRight {
+                                            from { opacity: 0; transform: translateX(24px); }
+                                            to { opacity: 1; transform: translateX(0); }
+                                        }
+                                    `}</style>
+
+                                    {/* แถบด้านบน: ปุ่มย้อนกลับ (เว้นระยะขวา pr-12 หลบปุ่มกากบาท) */}
+                                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3 pr-12">
                                         <button
                                             onClick={() => setIsRedeemMode(false)}
-                                            className="inline-flex items-center gap-1.5 text-xs md:text-sm font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 px-3.5 py-2 rounded-xl transition-all active:scale-95 shadow-sm"
+                                            className="inline-flex items-center gap-1 text-xs md:text-sm font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-xl transition-all active:scale-95"
                                         >
                                             <span>← ย้อนกลับ</span>
                                         </button>
-                                        <span className="text-xs md:text-sm text-slate-500 font-bold">
-                                            คลังของรางวัล
-                                        </span>
+                                        <span className="text-xs md:text-sm text-slate-400 font-bold">คลังของรางวัล</span>
                                     </div>
 
-                                    {/* การ์ดสรุปแต้มของสมาชิก */}
-                                    <div className="bg-gradient-to-r from-amber-500/15 via-amber-400/20 to-amber-500/10 border border-amber-300/70 rounded-2xl p-3.5 md:p-4 mb-3 flex items-center justify-between shadow-sm">
+                                    {/* 1. การ์ดแต้มคงเหลือ: ขาวมินิมอล มีขีด Accent ส้มทอง สะอาดตา */}
+                                    <div className="bg-white border border-amber-200/90 rounded-2xl p-3 px-4 mb-3 flex items-center justify-between shadow-[0_2px_8px_rgba(245,158,11,0.06)]">
                                         <div className="flex items-center gap-2.5">
-                                            <div className="w-10 h-10 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center shadow-inner font-bold text-lg">
-                                                🪙
-                                            </div>
+                                            <div className="w-1.5 h-6 rounded-full bg-amber-500 shrink-0 shadow-sm"></div>
                                             <div>
-                                                <span className="text-xs text-amber-900 font-bold block">แต้มคาร์บอนเครดิตที่มี</span>
-                                                <span className="text-[10px] md:text-xs text-slate-500 font-medium">ของ {selectedMember.fullName?.split(' ')[0]}</span>
+                                                <span className="text-xs md:text-[13px] font-bold text-slate-700 block leading-tight">
+                                                    แต้มคาร์บอนเครดิตที่มี
+                                                </span>
+                                                <span className="text-[10px] text-slate-400 font-medium">
+                                                    {selectedMember.fullName}
+                                                </span>
                                             </div>
                                         </div>
-                                        <div className="text-right">
-                                            <span className="font-['Fredoka_One'] text-2xl md:text-3xl text-amber-700 leading-none">
+                                        <div className="flex items-baseline gap-1 shrink-0">
+                                            <span className="font-['Fredoka_One'] text-2xl md:text-3xl text-amber-600 leading-none">
                                                 {(selectedMember.rewardPoints || 0).toLocaleString()}
                                             </span>
-                                            <span className="text-xs font-bold text-amber-600 ml-1">pts</span>
+                                            <span className="font-bold text-xs md:text-sm text-amber-800">pts</span>
                                         </div>
                                     </div>
 
-                                    {/* รายการของรางวัลที่สามารถแลกได้ */}
-                                    <div className="flex flex-col gap-3 max-h-[360px] md:max-h-[400px] overflow-y-auto pr-1">
+                                    {/* 2. รายการของรางวัล (List แถวยาว คงไอคอนม่วง + แถบสถานะ + ปุ่มกดเด่นชัด) */}
+                                    <div className="flex flex-col gap-2.5 max-h-[360px] md:max-h-[400px] overflow-y-auto pr-1">
                                         {rewards && rewards.length > 0 ? (
                                             rewards.map((item) => {
                                                 const memberPts = Number(selectedMember.rewardPoints) || 0;
@@ -498,51 +523,94 @@ export default function Members() {
                                                 return (
                                                     <div
                                                         key={item.id}
-                                                        className={`flex items-center justify-between p-3.5 md:p-4 rounded-2xl border transition-all ${canRedeem
-                                                            ? 'bg-white border-slate-200 hover:border-purple-300 shadow-sm'
-                                                            : 'bg-slate-50 border-slate-200/60 opacity-60'
+                                                        className={`relative flex items-center justify-between p-3 rounded-2xl border transition-all ${canRedeem
+                                                            ? 'bg-white border-slate-200 hover:border-purple-300 shadow-[0_2px_6px_rgba(0,0,0,0.02)]'
+                                                            : 'bg-slate-50/80 border-slate-200/60 opacity-60'
                                                             }`}
                                                     >
-                                                        <div className="flex items-center gap-3 md:gap-3.5">
-                                                            <div className={`w-11 h-11 md:w-13 md:h-13 rounded-2xl flex items-center justify-center font-bold shrink-0 ${canRedeem ? 'bg-purple-100 text-purple-600' : 'bg-slate-200 text-slate-400'
-                                                                }`}>
-                                                                <GiftIcon className="w-6 h-6" />
-                                                            </div>
+                                                        {/* แถบสีสถานะขอบซ้าย: เขียว = แลกได้ / เทา = แลกไม่ได้ */}
+                                                        <div
+                                                            className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full ${canRedeem ? 'bg-emerald-500' : 'bg-slate-300'
+                                                                }`}
+                                                        ></div>
+
+                                                        {/* ข้อมูลของรางวัล + กล่องไอคอนม่วง */}
+                                                        <div className="flex items-center gap-3 pl-2.5">
+                                                            {(() => {
+                                                                const ItemIcon = REWARD_ICON_MAP[item.iconName] || GiftIcon;
+                                                                return (
+                                                                    <div
+                                                                        className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-inner ${canRedeem
+                                                                            ? 'bg-purple-100 text-purple-600'
+                                                                            : 'bg-slate-200 text-slate-400'
+                                                                            }`}
+                                                                    >
+                                                                        <ItemIcon className="w-5 h-5 stroke-2" />
+                                                                    </div>
+                                                                );
+                                                            })()}
                                                             <div>
-                                                                <p className="font-bold text-sm md:text-base text-slate-800 leading-tight mb-1">{item.name}</p>
-                                                                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${item.stock > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-500'
-                                                                    }`}>
-                                                                    {item.stock > 0 ? `คงเหลือ ${item.stock} ชิ้น` : 'สินค้าหมด'}
-                                                                </span>
+                                                                <p className="font-bold text-sm md:text-[15px] text-slate-800 leading-snug">
+                                                                    {item.name}
+                                                                </p>
+                                                                <div className="flex items-center gap-2 mt-0.5">
+                                                                    <span
+                                                                        className={`text-[11px] font-semibold px-2 py-0.5 rounded-md ${item.stock > 0
+                                                                            ? 'bg-slate-100 text-slate-600'
+                                                                            : 'bg-rose-50 text-rose-500 font-bold'
+                                                                            }`}
+                                                                    >
+                                                                        {item.stock > 0 ? `เหลือ ${item.stock} ชิ้น` : 'สินค้าหมด'}
+                                                                    </span>
+                                                                    {!canRedeem && item.stock > 0 && (
+                                                                        <span className="text-[10px] text-rose-500 font-medium">
+                                                                            แต้มไม่พอ
+                                                                        </span>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </div>
 
-                                                        <div className="flex items-center gap-3 md:gap-4 shrink-0">
+                                                        {/* แต้มและปุ่มกดแลก */}
+                                                        <div className="flex items-center gap-3 shrink-0">
                                                             <div className="text-right">
-                                                                <span className="block font-['Fredoka_One'] text-base md:text-xl text-[#7c3aed] leading-none">{item.points}</span>
-                                                                <span className="text-[10px] text-slate-400 font-bold">แต้ม</span>
+                                                                <span className="block font-['Fredoka_One'] text-base md:text-lg text-[#7c3aed] leading-none">
+                                                                    {item.points}
+                                                                </span>
+                                                                <span className="text-[10px] font-bold text-slate-400">pts</span>
                                                             </div>
                                                             <button
-                                                                disabled={!canRedeem}
-                                                                onClick={async () => {
-                                                                    if (confirm(`ตัดแต้ม ${item.points} pts เพื่อแลก "${item.name}" ให้นักเรียนใช่หรือไม่?`)) {
-                                                                        const res = await redeemReward(selectedMember.id, item);
-                                                                        alert(res.message);
-                                                                    }
+                                                                disabled={!canRedeem || isRedeeming}
+                                                                onClick={() => {
+                                                                    showConfirm({
+                                                                        title: 'ยืนยันการแลกของรางวัล',
+                                                                        message: `ตัดแต้ม ${item.points} pts เพื่อแลก "${item.name}" ให้กับ ${selectedMember.fullName} ใช่หรือไม่?`,
+                                                                        confirmText: 'ยืนยันการแลก',
+                                                                        confirmColor: 'bg-[#7c3aed] hover:bg-[#6d28d9]',
+                                                                        onConfirm: async () => {
+                                                                            setIsRedeeming(true);
+                                                                            try {
+                                                                                const res = await redeemReward(selectedMember.id, item);
+                                                                                showToast(res.message, res.success ? 'success' : 'error');
+                                                                            } finally {
+                                                                                setIsRedeeming(false);
+                                                                            }
+                                                                        }
+                                                                    });
                                                                 }}
-                                                                className={`px-4 md:px-5 py-2.5 rounded-xl text-xs md:text-sm font-bold min-h-[40px] flex items-center justify-center transition-all ${canRedeem
-                                                                    ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-md active:scale-95 cursor-pointer'
-                                                                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                                                                className={`px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all ${canRedeem && !isRedeeming
+                                                                        ? 'bg-[#7c3aed] hover:bg-[#6d28d9] text-white shadow-sm active:scale-95 cursor-pointer'
+                                                                        : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                                                                     }`}
                                                             >
-                                                                แลกรางวัล
+                                                                {isRedeeming ? 'กำลังแลก...' : 'แลก'}
                                                             </button>
                                                         </div>
                                                     </div>
                                                 );
                                             })
                                         ) : (
-                                            <div className="text-center py-12 text-slate-400 text-sm">
+                                            <div className="text-center py-12 text-slate-400 text-xs font-medium bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
                                                 ยังไม่มีของรางวัลในระบบ
                                             </div>
                                         )}

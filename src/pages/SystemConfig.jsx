@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
     CurrencyDollarIcon, CalendarDaysIcon, GiftIcon, PlusIcon, TrashIcon, CheckCircleIcon,
@@ -14,7 +14,7 @@ export default function SystemConfig() {
     // -------------------------------------------------------------------------
     // 1. ดึงข้อมูลและฟังก์ชันจัดการส่วนกลางจาก AppContext
     // -------------------------------------------------------------------------
-    const { members, pricing, updatePricing, duration, updateDuration, rewards, updateRewards } = useApp();
+    const { members, pricing, updatePricing, duration, updateDuration, rewards, updateRewards, batchUpdateMembers, showToast, showConfirm } = useApp();
 
     // -------------------------------------------------------------------------
     // 2. State และการจัดการ: ราคากลางขยะ และ ระยะเวลากิจกรรม
@@ -23,7 +23,13 @@ export default function SystemConfig() {
     const [durationData, setDurationData] = useState(duration);
     const [isSavingPricing, setIsSavingPricing] = useState(false);
     const [isSavingDuration, setIsSavingDuration] = useState(false);
+    useEffect(() => {
+        if (pricing) setPricingData(pricing);
+    }, [pricing]);
 
+    useEffect(() => {
+        if (duration) setDurationData(duration);
+    }, [duration]);
     // 🚀 อัปเกรด: ใส่ async/await และแจ้งเตือน
     const handleSavePricing = async (e) => {
         e.preventDefault();
@@ -44,9 +50,9 @@ export default function SystemConfig() {
         setIsSavingDuration(true);
         try {
             await updateDuration(durationData);
-            alert("บันทึกระยะเวลารับฝากขยะสำเร็จ!");
+            showToast("บันทึกระยะเวลารับฝากขยะสำเร็จ!", "success");
         } catch (error) {
-            alert("เกิดข้อผิดพลาดในการบันทึกระยะเวลา");
+            showToast("เกิดข้อผิดพลาดในการบันทึกระยะเวลา", "error");
         } finally {
             setIsSavingDuration(false);
         }
@@ -91,12 +97,12 @@ export default function SystemConfig() {
             ];
 
             await updateRewards(updatedRewardsList);
-            alert("เพิ่มของรางวัลสำเร็จ!");
+            showToast("เพิ่มของรางวัลสำเร็จ!", "success");
 
             setIsAddingReward(false);
             setNewRewardForm({ name: '', points: '', stock: '', iconName: 'Gift' });
         } catch (error) {
-            alert("บันทึกของรางวัลไม่สำเร็จ");
+            showToast("บันทึกของรางวัลไม่สำเร็จ", "error");
         } finally {
             setIsSavingReward(false);
         }
@@ -109,14 +115,21 @@ export default function SystemConfig() {
     };
 
     // 🚀 อัปเกรด: ใส่ async/await
-    const handleDeleteReward = async (idToRemove) => {
-        if (window.confirm("คุณต้องการลบของรางวัลนี้ใช่หรือไม่?")) {
-            try {
-                await updateRewards(rewards.filter(r => r.id !== idToRemove));
-            } catch (error) {
-                alert("ลบของรางวัลไม่สำเร็จ");
+    const handleDeleteReward = (idToRemove) => {
+        showConfirm({
+            title: 'ยืนยันการลบของรางวัล',
+            message: 'คุณต้องการลบของรางวัลนี้ออกจากระบบใช่หรือไม่?',
+            confirmText: 'ลบของรางวัล',
+            confirmColor: 'bg-rose-600 hover:bg-rose-700',
+            onConfirm: async () => {
+                try {
+                    await updateRewards(rewards.filter(r => r.id !== idToRemove));
+                    showToast("ลบของรางวัลเรียบร้อยแล้ว", "info");
+                } catch (error) {
+                    showToast("ลบของรางวัลไม่สำเร็จ", "error");
+                }
             }
-        }
+        });
     };
 
     const REWARD_ICONS = [
@@ -191,10 +204,10 @@ export default function SystemConfig() {
         setSelectedMemberIds(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
     };
 
-    // ฟังก์ชันนี้เขียนไว้ดีมากครับ (ใช้ Batch Write ช่วยประหยัดเวลาคุยกับเซิร์ฟเวอร์)
-    const handleBatchExecute = async () => {
+    // (ใช้ Batch Write ช่วยประหยัดเวลาคุยกับเซิร์ฟเวอร์)
+    const handleBatchExecute = () => {
         if (selectedMemberIds.length === 0) {
-            alert('กรุณาเลือกนักเรียนอย่างน้อย 1 คน');
+            showToast('กรุณาเลือกนักเรียนอย่างน้อย 1 คน', 'info');
             return;
         }
 
@@ -204,34 +217,57 @@ export default function SystemConfig() {
                 ? `ยืนยันการเลื่อนชั้นเรียนไปเป็น "${targetGrade}" สำหรับนักเรียนจำนวน ${selectedMemberIds.length} คน?`
                 : `ยืนยันการปรับสถานะเป็น "${targetStatus}" สำหรับนักเรียนจำนวน ${selectedMemberIds.length} คน?`;
 
-        if (!window.confirm(confirmMessage)) return;
+        showConfirm({
+            title: 'ยืนยันการดำเนินการกลุ่ม',
+            message: confirmMessage,
+            confirmText: 'ยืนยันบันทึก',
+            confirmColor: 'bg-[#3b82f6] hover:bg-[#2563eb]',
+            onConfirm: async () => {
+                setIsProcessing(true);
+                try {
+                    const batch = writeBatch(db);
 
-        setIsProcessing(true);
-        try {
-            const batch = writeBatch(db);
+                    selectedMemberIds.forEach((id) => {
+                        const memberRef = doc(db, 'members', id);
+                        if (batchActionType === 'graduate') {
+                            batch.update(memberRef, { status: 'จบการศึกษา' });
+                        } else if (batchActionType === 'promote') {
+                            batch.update(memberRef, { grade: targetGrade, status: 'กำลังศึกษา' });
+                        } else {
+                            batch.update(memberRef, { status: targetStatus });
+                        }
+                    });
 
-            selectedMemberIds.forEach((id) => {
-                const memberRef = doc(db, 'members', id);
-                if (batchActionType === 'graduate') {
-                    batch.update(memberRef, { status: 'จบการศึกษา' });
-                } else if (batchActionType === 'promote') {
-                    batch.update(memberRef, { grade: targetGrade, status: 'กำลังศึกษา' });
-                } else {
-                    batch.update(memberRef, { status: targetStatus });
+                    await batch.commit();
+
+                    // อัปเดต State ในเครื่องทันที (0 Reads)
+                    const updatedMembersList = members.map((m) => {
+                        if (!selectedMemberIds.includes(m.id)) return m;
+                        if (batchActionType === 'graduate') {
+                            return { ...m, status: 'จบการศึกษา' };
+                        } else if (batchActionType === 'promote') {
+                            return { ...m, grade: targetGrade, status: 'กำลังศึกษา' };
+                        } else {
+                            return { ...m, status: targetStatus };
+                        }
+                    });
+
+                    if (batchUpdateMembers) {
+                        batchUpdateMembers(updatedMembersList);
+                    }
+
+                    showToast('บันทึกการเปลี่ยนแปลงนักเรียนเรียบร้อยแล้ว', 'success');
+                    setSelectedMemberIds([]);
+                    setSourceGrade('');
+                    setTargetGrade('');
+                } catch (error) {
+                    console.error('Batch Update Error:', error);
+                    showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
+                } finally {
+                    setIsProcessing(false);
                 }
-            });
-
-            await batch.commit();
-            alert('บันทึกการเปลี่ยนแปลงข้อมูลนักเรียนเรียบร้อยแล้ว');
-            setSelectedMemberIds([]);
-            setSourceGrade('');
-            setTargetGrade('');
-        } catch (error) {
-            console.error('Batch Update Error:', error);
-            alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง');
-        } finally {
-            setIsProcessing(false);
-        }
+            }
+        });
     };
 
     // -------------------------------------------------------------------------

@@ -31,7 +31,7 @@ export default function Settings() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
-    const { members, addMember, updateMember, deleteMember, pricing, sysStats, processDeposit } = useApp();
+    const { members, addMember, updateMember, deleteMember, pricing, sysStats, processDeposit, showToast, showConfirm } = useApp();
 
     const filteredMembers = members.filter(member => {
         const term = searchTerm.toLowerCase();
@@ -129,25 +129,11 @@ export default function Settings() {
     const cartTotalCarbon = depositCart.reduce((sum, item) => sum + item.totalCarbon, 0).toFixed(4);
 
     // แก้ไข: เพิ่มคำสั่ง await ในการเรียกใช้ Context เพื่อรอให้ฐานข้อมูลบันทึกสำเร็จก่อน
-    const handleSave = async (e) => {
-        e.preventDefault();
-
-        // 1. ดักจับ: ถ้าไม่มีการเลือกรูปใหม่ (imageSrc) และ ไม่มีรูปเดิมอยู่แล้ว (formData.image)
-        if (!imageSrc && !formData.image) {
-            // แจ้งเตือน Pop-up
-            const confirmNoImage = window.confirm("คุณยังไม่ได้ใส่รูปภาพโปรไฟล์ ต้องการบันทึกข้อมูลโดยไม่ใช้รูปภาพใช่หรือไม่?");
-            if (!confirmNoImage) {
-                return; // ถ้าผู้ใช้กดยกเลิก ให้หยุดการทำงานและกลับไปหน้าฟอร์ม
-            }
-        }
-
+    const executeSaveMember = async () => {
         setIsUploading(true);
-
         try {
-            // 2. ให้ค่าเริ่มต้นเป็นรูปเดิม หรือค่าว่าง "" (ถ้าไม่มีรูป)
             let finalImageUrl = formData.image || "";
 
-            // 3. ถ้ามีการเลือกรูปใหม่ ค่อยประมวลผลและส่งขึ้น Cloudinary
             if (imageSrc && croppedAreaPixels) {
                 const croppedFile = await getCroppedImg(imageSrc, croppedAreaPixels);
                 const uploadedUrl = await uploadImageToCloudinary(croppedFile);
@@ -158,22 +144,41 @@ export default function Settings() {
                 }
             }
 
-            // 4. บันทึกข้อมูล (ถ้าไม่มีรูป finalImageUrl จะเป็น "")
             const finalData = { ...formData, image: finalImageUrl };
 
             if (modalMode === 'add') {
                 await addMember(finalData);
+                showToast(`เพิ่มสมาชิก ${finalData.fullName} สำเร็จ`, 'success');
             } else if (modalMode === 'edit') {
                 await updateMember(finalData);
+                showToast(`อัปเดตข้อมูล ${finalData.fullName} เรียบร้อย`, 'success');
             }
 
             closeModal();
         } catch (error) {
             console.error("Save error:", error);
-            alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง");
+            showToast("เกิดข้อผิดพลาดในการบันทึกข้อมูล", "error");
         } finally {
             setIsUploading(false);
         }
+    };
+
+    const handleSave = (e) => {
+        e.preventDefault();
+
+        // แจ้งเตือนยืนยันหากไม่ได้ใส่รูปภาพโปรไฟล์
+        if (!imageSrc && !formData.image) {
+            showConfirm({
+                title: 'ยังไม่ได้ใส่รูปภาพโปรไฟล์',
+                message: 'ต้องการบันทึกข้อมูลโดยใช้ไอคอนเริ่มต้นแทนรูปภาพใช่หรือไม่?',
+                confirmText: 'บันทึกโดยไม่ใช้รูป',
+                confirmColor: 'bg-amber-600 hover:bg-amber-700',
+                onConfirm: executeSaveMember
+            });
+            return;
+        }
+
+        executeSaveMember();
     };
 
     // แก้ไข: ดึงฟังก์ชันบันทึกตะกร้าขยะออกมาจัดการแยก เพื่อใส่ try/catch และ await
@@ -186,17 +191,18 @@ export default function Settings() {
             // รอจนกว่าจะบันทึกประวัติลงฐานข้อมูลสำเร็จ
             await processDeposit(selectedDepositMember, depositCart, cartTotalMoney, cartTotalCarbon);
 
-            alert(`ยืนยันการรับฝากสำเร็จ!\n${selectedDepositMember.fullName} ได้รับเงิน ${cartTotalMoney} บาท`);
+            showToast(`รับฝากสำเร็จ! ${selectedDepositMember.fullName} ได้รับเงิน ${cartTotalMoney} บาท`, 'success');
 
             // ล้างค่าหลังจากบันทึกสำเร็จเท่านั้น
             setDepositCart([]);
             setSelectedDepositMember(null);
             setDepositMemberSearch('');
             setCurrentDepositItem({ category: 'plastic', item: 'พลาสติกรวม', weight: '' });
+
             closeModal();
         } catch (error) {
             console.error("Deposit error:", error);
-            alert("บันทึกการฝากไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+            showToast("บันทึกการฝากไม่สำเร็จ กรุณาลองใหม่อีกครั้ง", "error");
         } finally {
             setIsProcessingDeposit(false);
         }
@@ -595,10 +601,17 @@ export default function Settings() {
                                         <button
                                             type="button"
                                             onClick={() => {
-                                                if (window.confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลของ ${formData.fullName} ?\n(ข้อมูลยอดเงินและคาร์บอนของคนนี้จะถูกหักออกจากระบบด้วย)`)) {
-                                                    deleteMember(formData.id);
-                                                    closeModal();
-                                                }
+                                                showConfirm({
+                                                    title: 'ยืนยันการลบสมาชิก',
+                                                    message: `คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลของ ${formData.fullName}?\nยอดเงินและคาร์บอนของคนนี้จะถูกหักออกจากระบบด้วย`,
+                                                    confirmText: 'ลบสมาชิก',
+                                                    confirmColor: 'bg-rose-600 hover:bg-rose-700',
+                                                    onConfirm: () => {
+                                                        deleteMember(formData.id);
+                                                        closeModal();
+                                                        showToast('ลบข้อมูลสมาชิกเรียบร้อยแล้ว', 'info');
+                                                    }
+                                                });
                                             }}
                                             className="px-4 py-2.5 rounded-xl text-red-500 hover:bg-red-50 font-bold text-sm flex items-center gap-2 border border-transparent hover:border-red-200 cursor-pointer active:scale-95 transition-all duration-200"
                                         >
@@ -649,33 +662,71 @@ export default function Settings() {
                                 </div>
 
                                 <div className="flex flex-col gap-1.5">
-                                    <label className="font-bold text-xs text-[#475569]">ค้นหาชื่อผู้ฝาก (พิมพ์เพื่อค้นหา)</label>
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            placeholder="ตัวอย่าง: สมชาย"
-                                            value={depositMemberSearch}
-                                            onChange={(e) => {
-                                                setDepositMemberSearch(e.target.value);
-                                                setSelectedDepositMember(null);
-                                            }}
-                                            className="w-full bg-[#f8fafc] border border-[#e2e8f0] pl-4 pr-10 py-2.5 rounded-lg text-sm font-bold text-[#0f172a] outline-none focus:border-[#10b981]"
-                                        />
-                                        <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" />
-                                    </div>
-                                    {depositMemberSearch && !selectedDepositMember && (
-                                        <div className="bg-white border border-[#e2e8f0] rounded-lg mt-1 max-h-32 overflow-y-auto shadow-sm absolute z-20 w-[calc(50%-2rem)]">
-                                            {members.filter(m => m.fullName.includes(depositMemberSearch)).map(m => (
-                                                <div
-                                                    key={m.id}
-                                                    onClick={() => { setSelectedDepositMember(m); setDepositMemberSearch(`${m.fullName} (${m.grade})`); }}
-                                                    className="px-4 py-2 hover:bg-[#ecfdf5] cursor-pointer text-sm font-bold text-[#0f172a] border-b border-[#f1f5f9] last:border-0"
-                                                >
-                                                    {m.fullName} <span className="text-[#64748b] text-xs font-semibold">({m.grade})</span>
+                                    <label className="font-bold text-xs text-[#475569]">ผู้ฝากขยะ</label>
+
+                                    {/* กรณีเลือกสมาชิกแล้ว: แสดงเป็นการ์ดสรุปพร้อมปุ่มเปลี่ยนคน */}
+                                    {selectedDepositMember ? (
+                                        <div className="flex items-center justify-between p-2.5 px-3.5 bg-emerald-50/80 border border-emerald-200 rounded-xl">
+                                            <div className="flex items-center gap-2.5 overflow-hidden">
+                                                <div className="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-sm">
+                                                    {selectedDepositMember.fullName?.split(' ')[1]?.[0] || selectedDepositMember.fullName?.[0] || 'U'}
                                                 </div>
-                                            ))}
-                                            {members.filter(m => m.fullName.includes(depositMemberSearch)).length === 0 && (
-                                                <div className="px-4 py-3 text-xs text-[#94a3b8] text-center">ไม่พบชื่อที่ค้นหา</div>
+                                                <div className="flex flex-col overflow-hidden">
+                                                    <span className="font-bold text-sm text-[#0f172a] truncate">{selectedDepositMember.fullName}</span>
+                                                    <span className="text-[11px] text-emerald-700 font-semibold leading-tight">ชั้น {selectedDepositMember.grade}</span>
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setSelectedDepositMember(null);
+                                                    setDepositMemberSearch('');
+                                                }}
+                                                className="p-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                                title="เปลี่ยนผู้ฝาก"
+                                            >
+                                                <XMarkIcon className="w-5 h-5" />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        /* กรณียังไม่ได้เลือก: แสดงช่องค้นหา + ผลลัพธ์ Inline เลื่อนได้ */
+                                        <div className="flex flex-col gap-1.5">
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    placeholder="พิมพ์ชื่อนักเรียนเพื่อค้นหา..."
+                                                    value={depositMemberSearch}
+                                                    onChange={(e) => setDepositMemberSearch(e.target.value)}
+                                                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] pl-4 pr-10 py-2.5 rounded-xl text-sm font-bold text-[#0f172a] outline-none focus:border-[#10b981] focus:bg-white transition-all"
+                                                />
+                                                <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" />
+                                            </div>
+
+                                            {/* ผลลัพธ์แบบ Inline Container ขยายลงมาตามเนื้อหา ไม่หลุดขอบ Modal */}
+                                            {depositMemberSearch.trim() && (
+                                                <div className="border border-[#e2e8f0] rounded-xl bg-white max-h-36 overflow-y-auto p-1 flex flex-col gap-0.5 shadow-inner">
+                                                    {members
+                                                        .filter(m => (m.fullName || '').toLowerCase().includes(depositMemberSearch.toLowerCase()))
+                                                        .slice(0, 10)
+                                                        .map(m => (
+                                                            <div
+                                                                key={m.id}
+                                                                onClick={() => {
+                                                                    setSelectedDepositMember(m);
+                                                                    setDepositMemberSearch('');
+                                                                }}
+                                                                className="px-3 py-2 hover:bg-emerald-50/80 rounded-lg cursor-pointer text-xs font-bold text-[#0f172a] flex items-center justify-between transition-colors"
+                                                            >
+                                                                <span>{m.fullName}</span>
+                                                                <span className="text-slate-400 font-medium text-[11px]">{m.grade}</span>
+                                                            </div>
+                                                        ))}
+                                                    {members.filter(m => (m.fullName || '').toLowerCase().includes(depositMemberSearch.toLowerCase())).length === 0 && (
+                                                        <div className="py-4 text-center text-xs font-bold text-slate-400">
+                                                            ไม่พบชื่อนักเรียนที่ค้นหา
+                                                        </div>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
                                     )}

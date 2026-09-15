@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, useContext, useMemo } from 'react';
 import { doc, getDoc, getDocs, setDoc, updateDoc, collection, increment, deleteDoc } from 'firebase/firestore';
+import { CheckCircleIcon, ExclamationCircleIcon, InformationCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { db } from './firebase';
 import { DEFAULT_PRICES, WASTE_CATEGORIES } from './utils/wasteConfig';
 
@@ -26,6 +27,20 @@ const logQuota = (action, count, detail = '') => {
 export const AppProvider = ({ children }) => {
     const [members, setMembers] = useState([]);
     const [pricing, setPricing] = useState(DEFAULT_PRICES);
+    // ระบบแจ้งเตือน Clay Toast & Confirm Modal กลาง
+    const [toast, setToast] = useState(null);
+    const [confirmModal, setConfirmModal] = useState(null);
+
+    const showToast = (message, type = 'success') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 3200);
+    };
+
+    const showConfirm = ({ title, message, onConfirm, confirmText = 'ยืนยัน', cancelText = 'ยกเลิก', confirmColor = 'bg-[#7c3aed]' }) => {
+        setConfirmModal({ title, message, onConfirm, confirmText, cancelText, confirmColor });
+    };
+
+    const closeConfirm = () => setConfirmModal(null);
     const [priceUpdatedAt, setPriceUpdatedAt] = useState(null);
     const [duration, setDuration] = useState({ round1: 15, round2: 25 });
     const [rewards, setRewards] = useState([]);
@@ -387,8 +402,21 @@ export const AppProvider = ({ children }) => {
             const configRef = doc(db, 'system', 'config');
             await updateDoc(configRef, { rewards: updatedRewards });
 
-            // [QUOTA-TRACK] ดักจับการแลกของรางวัล (อัปเดตสมาชิก 1 + อัปเดตสต็อก config 1 = 2 writes)
-            logQuota('WRITE', 2, `redeem reward: ${rewardItem.name} (-${requiredPoints} pts)`);
+            // 3. บันทึกสลิปการแลกรางวัลลงคอลเลกชันกลาง transactions (สำหรับรายงาน/Export ย้อนหลัง)
+            const txId = `tx_redeem_${Date.now()}`;
+            await setDoc(doc(db, 'transactions', txId), {
+                type: 'redeem',
+                memberId: memberId,
+                memberName: targetMember.fullName,
+                rewardId: rewardItem.id,
+                rewardName: rewardItem.name,
+                pointsSpent: requiredPoints,
+                quantity: 1,
+                timestamp: new Date()
+            });
+
+            // [QUOTA-TRACK] อัปเดตสมาชิก 1 + สต็อก 1 + สลิปธุรกรรม 1 = 3 writes
+            logQuota('WRITE', 3, `redeem reward: ${rewardItem.name} (-${requiredPoints} pts) + tx logged`);
 
             // 3. อัปเดต State ภายในแอป
             setMembers(prev => prev.map(m => m.id === memberId ? {
@@ -405,18 +433,82 @@ export const AppProvider = ({ children }) => {
         }
     };
 
+    const batchUpdateMembers = (updatedMemberList) => {
+        setMembers(updatedMemberList);
+    };
+
     const contextValue = useMemo(() => ({
         isAppLoading, sysStats,
         members, setMembers, addMember, updateMember, processDeposit, deleteMember,
         pricing, updatePricing, priceUpdatedAt,
         duration, updateDuration,
         rewards, updateRewards,
-        redeemReward // ส่งฟังก์ชันออกไปให้คอมโพเนนต์อื่นเรียกใช้
+        redeemReward,
+        batchUpdateMembers,
+        showToast,
+        showConfirm
     }), [isAppLoading, sysStats, members, pricing, priceUpdatedAt, duration, rewards]);
 
     return (
         <AppContext.Provider value={contextValue}>
             {children}
+
+            {/* 🌟 1. CLAY TOAST NOTIFICATION (เด้งเตือนมุมบนจอ) */}
+            {toast && (
+                <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] max-w-sm w-[90%] font-['Prompt'] animate-modal-pop pointer-events-none">
+                    <div className={`p-4 rounded-2xl shadow-xl border flex items-center gap-3 backdrop-blur-md pointer-events-auto ${toast.type === 'error'
+                        ? 'bg-rose-50/95 border-rose-200 text-rose-800 shadow-rose-900/10'
+                        : toast.type === 'info'
+                            ? 'bg-blue-50/95 border-blue-200 text-blue-800 shadow-blue-900/10'
+                            : 'bg-emerald-50/95 border-emerald-200 text-emerald-800 shadow-emerald-900/10'
+                        }`}>
+                        {toast.type === 'error' ? (
+                            <ExclamationCircleIcon className="w-6 h-6 text-rose-600 shrink-0 stroke-2" />
+                        ) : toast.type === 'info' ? (
+                            <InformationCircleIcon className="w-6 h-6 text-blue-600 shrink-0 stroke-2" />
+                        ) : (
+                            <CheckCircleIcon className="w-6 h-6 text-emerald-600 shrink-0 stroke-2" />
+                        )}
+                        <span className="text-xs md:text-sm font-bold flex-1 leading-snug">{toast.message}</span>
+                        <button onClick={() => setToast(null)} className="p-1 hover:bg-black/5 rounded-lg transition-colors">
+                            <XMarkIcon className="w-4 h-4 text-slate-400" />
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* 🌟 2. CLAY CONFIRMATION MODAL (กล่องถามยืนยันสไตล์ Claymorphism) */}
+            {confirmModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 font-['Prompt']">
+                    <div className="absolute inset-0 bg-[#1e1b4b]/60 backdrop-blur-sm transition-opacity" onClick={closeConfirm}></div>
+                    <div className="clay-card relative w-full max-w-sm bg-white p-6 md:p-7 rounded-[28px] shadow-2xl z-10 animate-modal-pop flex flex-col gap-4 border border-slate-100">
+                        <div className="flex flex-col gap-1.5">
+                            <h3 className="font-bold text-base md:text-lg text-slate-800 leading-tight">{confirmModal.title || 'ยืนยันการทำรายการ'}</h3>
+                            <p className="text-xs md:text-sm text-slate-500 font-medium whitespace-pre-line leading-relaxed">{confirmModal.message}</p>
+                        </div>
+                        <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+                            <button
+                                type="button"
+                                onClick={closeConfirm}
+                                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs md:text-sm font-bold transition-all active:scale-95"
+                            >
+                                {confirmModal.cancelText}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const action = confirmModal.onConfirm;
+                                    closeConfirm();
+                                    if (action) action();
+                                }}
+                                className={`px-5 py-2.5 rounded-xl text-white text-xs md:text-sm font-bold shadow-md transition-all active:scale-95 ${confirmModal.confirmColor}`}
+                            >
+                                {confirmModal.confirmText}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </AppContext.Provider>
     );
 };
